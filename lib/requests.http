@@ -1,0 +1,87 @@
+POST http://localhost:7001/common/uploadKycInfo
+Content-Type: application/json
+
+{
+  "name": "Lionnel",
+  "surname": "Mabanzaka",
+  "birthday": "22/08/2006",
+  "phone": "243892007343",
+  "idNumber": "string",
+  "address": "string",
+  "status": "pending",
+  "role": "customer",
+  "otp": "string"
+}
+
+#### Activate Device with bill generation (Using Activation Code)
+POST http://localhost:7001/device/activate?code=A00QW6&deviceType=1
+Content-Type: application/json
+deviceId: 2536278193U2
+deviceTypeId: 1
+
+{
+
+}
+
+
+#### Get Active Status
+GET http://localhost:7001/bill/getDeviceActiveStatus
+Content-Type: application/json
+deviceId: 2536278193U2
+
+
+
+### Ask Activation code
+
+### Get Bill
+GET http://localhost:7001/bill/getBillsByCustomer?customerPhone=243892007341
+Content-Type: application/json
+
+### Get bill types
+GET http://localhost:7001/bill/getBillTypes
+Content-Type: application/json
+
+### Create Bills
+PUT http://localhost:7001/bill/createBills?typeCode=month
+Content-Type: application/json
+deviceId: 2536278193U2
+
+{}
+
+### PayBill
+GET http://localhost:7001/bill/payBill?billNo=
+Content-Type: application/json
+deviceId: 2536278193U3
+
+### payment
+POST http://localhost:7001/pay/gtOrder
+Content-Type: application/json
+deviceId: 2536278193U2
+
+{
+  "billNo": "1922814038888779778",
+  "payAmount": 1.0,
+  "mobile": "224664757566",
+  "description": "bill payment"
+}
+
+### verify status
+GET http://localhost:7001/pay/getPaymentStatus?orderId=1922818108152188928
+Content-Type: application/json
+deviceId: 2536278193U2
+
+
+### Create Device type
+POST http://localhost:7001/device-type/create
+Content-Type: application/json
+
+{
+    "typeName": "Phone",
+    "typeModel": "Android",
+    "typePrice": 2300.7,
+    "typeActivationFee": 200,
+}
+
+### Get device typ list
+GET http://localhost:7001/api/devicetype/list
+Content-Type: application/json

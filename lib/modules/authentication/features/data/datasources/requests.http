@@ -1,0 +1,21 @@
+### Login
+POST https://bwjz5tajxi.execute-api.eu-west-2.amazonaws.com/v1/auth/login
+Content-Type: application/json
+
+{
+    "email": "superadmin@contact.com",
+    "password": "joelokadi"
+}
+
+### Signup
+POST https://bwjz5tajxi.execute-api.eu-west-2.amazonaws.com/v1/auth/signup
+Content-Type: application/json
+
+{
+    "email": "lionnel@gmail.com",
+    "password": "lionnel",
+    "name": "Lionnel MAZUBA",
+    "phone": "00243892007346",
+    "role": "doctor"
+}
+
