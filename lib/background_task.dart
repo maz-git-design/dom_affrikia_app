@@ -49,29 +49,6 @@ void startCallback() {
 }
 
 class MyTaskHandler extends TaskHandler {
-  //final localNotification = FlutterLocalNotificationsPlugin();
-  // Future<void> _sendNotification(String title, String body) async {
-  //   const AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
-  //     'task_channel_id',
-  //     'Background Task Notifications',
-  //     channelDescription: 'Shows notifications for background tasks',
-  //     importance: Importance.high,
-  //     priority: Priority.high,
-  //   );
-
-  //   const NotificationDetails platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);
-
-  //   // FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-  //   // flutterLocalNotificationsPlugin
-  //   //     .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()!
-  //   //     .requestNotificationsPermission();
-
-  //   await localNotification.show(0, title, body, platformChannelSpecifics, payload: 'my data');
-  // }
-
-  // Future<bool> hasOverdueBill() async {
-
-  static const MethodChannel _channel = MethodChannel('device_admin');
   static const FlutterSecureStorage _secureStorage =
       FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
 
@@ -103,34 +80,26 @@ class MyTaskHandler extends TaskHandler {
       ),
     );
 
-    if (Platform.isAndroid) {
-      const intent = AndroidIntent(
-        action: 'com.example.dom_affrikia_app.ACTION_ADMIN',
-        package: 'com.example.dom_affrikia_app', // Replace with your actual package name
-        componentName: 'com.example.dom_affrikia_app.AdminActionReceiver',
-        arguments: {
-          'action': 'enableKioskMode',
-        },
-      );
-
-      await intent.sendBroadcast();
-    }
-
-    // final adminStatus = await _channel.invokeMethod<bool>('getAdminStatus');
-    // log("Admin status: $adminStatus");
-
     var hasOverdue = await hasOverdueBill();
 
     log("Has overdue bill: $hasOverdue");
 
     if (hasOverdue != null && hasOverdue) {
       // Enable kiosk mode
-      _channel.invokeMethod('enableKioskMode');
-    }
-    //platform.invokeMethod('enableKioskMode');
 
-    // Call your notification logic
-    //await _sendNotification("🔔 Reminder", "Task ran at $timestamp");
+      if (Platform.isAndroid) {
+        const intent = AndroidIntent(
+          action: 'com.example.dom_affrikia_app.ACTION_ADMIN',
+          package: 'com.example.dom_affrikia_app', // Replace with your actual package name
+          componentName: 'com.example.dom_affrikia_app.AdminActionReceiver',
+          arguments: {
+            'action': 'enableKioskMode',
+          },
+        );
+
+        await intent.sendBroadcast();
+      }
+    }
   }
 
   // Called when the task is destroyed.
