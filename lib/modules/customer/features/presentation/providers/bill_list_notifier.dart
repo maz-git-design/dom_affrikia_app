@@ -1,10 +1,12 @@
 import 'dart:developer';
 
+import 'package:dom_affrikia_app/background_task.dart';
 import 'package:dom_affrikia_app/core/enums/phone-state.enum.dart';
 import 'package:dom_affrikia_app/modules/customer/features/domain/entities/bill.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/providers/main_data_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class BillListNotifier extends ChangeNotifier {
@@ -50,16 +52,44 @@ class BillListNotifier extends ChangeNotifier {
     _onChange();
   }
 
+  void _sendDataToTask() {
+    // Main(UI) -> TaskHandler
+    //
+    // The Map collection can only be sent in json format, such as Map<String, dynamic>.
+    FlutterForegroundTask.sendDataToTask(Object);
+  }
+
   calculatePhoneState() async {
     if (hasBillTopay() && !hasBillOverdue()) {
       mainDataProvider.phoneState = PhoneStateEnum.unlockPartially;
       await secureStorage.write(key: "phoneState", value: PhoneStateEnum.unlockPartially.index.toString());
+
+      final Map<String, dynamic> data = {
+        "phoneState": 1,
+      };
+      FlutterForegroundTask.sendDataToTask(data);
+      await disableKioskModePartially();
+      log("phone unlocked partially");
     } else if (hasBillTopay() && hasBillOverdue()) {
       mainDataProvider.phoneState = PhoneStateEnum.lock;
       await secureStorage.write(key: "phoneState", value: PhoneStateEnum.lock.index.toString());
+      // final Map<String, dynamic> data = {
+      //   "phoneState": 0,
+      // };
+      // FlutterForegroundTask.sendDataToTask(data);
+      await enableKioskMode();
+      log("phone locked");
     } else if (paidAllBill()) {
       mainDataProvider.phoneState = PhoneStateEnum.unlock;
       await secureStorage.write(key: "phoneState", value: PhoneStateEnum.unlock.index.toString());
+
+      final Map<String, dynamic> data = {
+        "phoneState": 2,
+      };
+      FlutterForegroundTask.sendDataToTask(data);
+      await Future.delayed(const Duration(seconds: 2));
+      await disableKioskMode();
+      log("phone unlocked completely");
     }
   }
 
@@ -87,28 +117,16 @@ class BillListNotifier extends ChangeNotifier {
     calculatePhoneState(); // Your custom logic to calculate phone state
 
     //var currentPhoneState = await secureStorage.read(key: "phoneState");
-    if (mainDataProvider.phoneState == PhoneStateEnum.lock) {
-      await enableKioskMode();
-      // if (currentPhoneState != null && currentPhoneState != PhoneStateEnum.lock.toString()) {
-      //   await enableKioskMode();
-
-      // }
-      log("phone locked");
-    } else if (mainDataProvider.phoneState == PhoneStateEnum.unlockPartially) {
-      await disableKioskMode();
-      log("phone unlocked");
-      // if (currentPhoneState != null && currentPhoneState != PhoneStateEnum.unlockPartially.toString()) {
-      //   await disableKioskMode();
-
-      // }
-    } else if (mainDataProvider.phoneState == PhoneStateEnum.unlock) {
-      await disableKioskMode();
-      // if (currentPhoneState != null && currentPhoneState != PhoneStateEnum.unlock.toString()) {
-      //   await disableKioskMode();
-
-      // }
-      log("phone unlocked completely");
-    }
+    // if (mainDataProvider.phoneState == PhoneStateEnum.lock) {
+    //   await enableKioskMode();
+    //   log("phone locked");
+    // } else if (mainDataProvider.phoneState == PhoneStateEnum.unlockPartially) {
+    //   await disableKioskModePartially();
+    //   log("phone unlocked partially");
+    // } else if (mainDataProvider.phoneState == PhoneStateEnum.unlock) {
+    //   await disableKioskMode();
+    //   log("phone unlocked completely");
+    // }
   }
 
   Future<void> enableKioskMode() async {
@@ -124,6 +142,16 @@ class BillListNotifier extends ChangeNotifier {
     try {
       var message = await methodChannel.invokeMethod<String>('disableKioskMode');
       log("Phone disabled from notifier: $message");
+      //await methodChannel.invokeMethod("disableKioskMode");
+    } catch (e) {
+      log("Error enabling Kiosk Mode: $e");
+    }
+  }
+
+  Future<void> disableKioskModePartially() async {
+    try {
+      var message = await methodChannel.invokeMethod<String>('disableKioskModePartially');
+      log("Phone disabled partially from notifier: $message");
       //await methodChannel.invokeMethod("disableKioskMode");
     } catch (e) {
       log("Error enabling Kiosk Mode: $e");

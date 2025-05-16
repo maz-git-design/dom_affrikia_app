@@ -129,7 +129,17 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
             emit(AdminError(message: message));
           }
           break;
-
+        case AdminConfigEnum.lockDateConfig:
+          try {
+            message = await methodChannel.invokeMethod<String>(event.newState ? 'blockDateConfig' : 'allowDateConfig');
+            adminDataProvider.adminConfigs[event.optionIndex] =
+                adminDataProvider.adminConfigs[event.optionIndex].copyWith(state: event.newState);
+            emit(AdminConfigChanged(message: message ?? ""));
+          } catch (e) {
+            message = "Erreur ${e.toString()}";
+            emit(AdminError(message: message));
+          }
+          break;
         default:
           break;
       }
@@ -148,6 +158,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
         final safeBootStatus = await methodChannel.invokeMethod<bool>('getSafeBootStatus');
         final tetheringStatus = await methodChannel.invokeMethod<bool>('getTetheringStatus');
         final addUserStatus = await methodChannel.invokeMethod<bool>('getAddUserStatus');
+        final dateConfigStatus = await methodChannel.invokeMethod<bool>('getDateTimeStatus');
 
         log("Admin status: $adminStatus");
         log("Kiosk status: $kioskStatus");
@@ -158,6 +169,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
         log("Safe boot status: $safeBootStatus");
         log("Tethering status: $tetheringStatus");
         log("Add user status: $addUserStatus");
+        log("Date/heure configuration status: $dateConfigStatus");
 
         adminDataProvider.adminConfigs = [
           AdminConfig(
@@ -220,6 +232,13 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
             title: "Empêcher l'ajout d'utilisateurs",
             config: AdminConfigEnum.lockAddUser,
             state: addUserStatus!,
+            methodName: "",
+            icon: MdiIcons.accountCancel,
+          ),
+          AdminConfig(
+            title: "Empêcher la modif. date",
+            config: AdminConfigEnum.lockDateConfig,
+            state: dateConfigStatus!,
             methodName: "",
             icon: MdiIcons.accountCancel,
           ),

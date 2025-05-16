@@ -1,10 +1,14 @@
+import 'dart:developer';
 import 'dart:io';
 import 'dart:ui';
 
 import 'package:dom_affrikia_app/background_task.dart';
+import 'package:dom_affrikia_app/core/enums/phone-state.enum.dart';
+import 'package:dom_affrikia_app/injection_container.dart';
 
 import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/pages/authenticated_screen.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/pages/home_screen.dart';
+import 'package:dom_affrikia_app/modules/main/features/middleware/providers/main_data_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
@@ -23,6 +27,15 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  void _onReceiveTaskData(Object data) {
+    if (data is Map<String, dynamic>) {
+      final dynamic newPhoneState = data["phoneState"];
+      if (newPhoneState != null) {
+        sl<MainDataProvider>().phoneState = getPhoneState(newPhoneState)!;
+      }
+    }
+  }
+
   Future<void> _requestPermissions() async {
     // Android 13+, you need to allow notification permission to display foreground service notification.
     //
@@ -81,16 +94,25 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     //startMyBackgroundTask();
 
-    // Add a callback to receive data sent from the TaskHandler.
-    //FlutterForegroundTask.addTaskDataCallback(_onReceiveTaskData);
+    if (sl<MainDataProvider>().phoneState != PhoneStateEnum.unlock) {
+      // Add a callback to receive data sent from the TaskHandler.
+      FlutterForegroundTask.addTaskDataCallback(_onReceiveTaskData);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Request permissions and initialize the service.
-      _requestPermissions();
-      _initService();
-    });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Request permissions and initialize the service.
+        _requestPermissions();
+        _initService();
+      });
 
-    startService();
+      startService();
+    }
+  }
+
+  @override
+  void dispose() {
+    // Remove a callback to receive data sent from the TaskHandler.
+    FlutterForegroundTask.removeTaskDataCallback(_onReceiveTaskData);
+    super.dispose();
   }
 
   @override

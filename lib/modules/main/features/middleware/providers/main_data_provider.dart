@@ -127,6 +127,7 @@ class MainDataProvider extends Disposable {
   }
 
   bool get isPhoneCompletelyUnlocked => phoneState == PhoneStateEnum.unlock;
+  bool get isPhoneLocked => phoneState == PhoneStateEnum.lock;
 
   cleanData() {
     customerInfo = null;

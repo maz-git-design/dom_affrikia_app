@@ -1,3 +1,4 @@
+import 'package:dom_affrikia_app/background_task.dart';
 import 'package:dom_affrikia_app/core/enums/cycle.enum.dart';
 import 'package:dom_affrikia_app/core/ui/widgets/dialog_box.dart';
 import 'package:dom_affrikia_app/core/utils/helpers/customer.helper.dart';
@@ -8,6 +9,7 @@ import 'package:dom_affrikia_app/modules/customer/features/domain/entities/cycle
 import 'package:dom_affrikia_app/modules/main/features/middleware/providers/main_data_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -224,6 +226,47 @@ class _AdminViewState extends State<AdminView> {
                                 ),
                               ],
                             ),
+                          ),
+                          Divider(color: Theme.of(context).cardColor),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.sync_outlined,
+                                color: Colors.amber,
+                                size: 20.0,
+                              ),
+                              SizedBox(width: 5.w),
+                              Text("Activer le service principal",
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w400,
+                                  )),
+                              const Spacer(),
+                              SizedBox(
+                                height: 40,
+                                child: FittedBox(
+                                  fit: BoxFit.fill,
+                                  child: Switch(
+                                    value: sl<AdminDataProvider>().isForegroundServiceRunning,
+                                    padding: const EdgeInsets.all(0),
+                                    splashRadius: 2,
+                                    onChanged: (value) async {
+                                      if (value) {
+                                        await startService();
+                                        setState(() {
+                                          sl<AdminDataProvider>().isForegroundServiceRunning = true;
+                                        });
+                                      } else {
+                                        await stopService();
+                                        setState(() {
+                                          sl<AdminDataProvider>().isForegroundServiceRunning = false;
+                                        });
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

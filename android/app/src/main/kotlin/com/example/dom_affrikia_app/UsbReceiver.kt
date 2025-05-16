@@ -12,9 +12,9 @@ class UsbReceiver : BroadcastReceiver() {
             val dpm = context?.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
             val adminComponent = ComponentName(context, MyDeviceAdminReceiver::class.java)
 
-            if (dpm.isAdminActive(adminComponent)) {
-                dpm.setUsbDataSignalingEnabled(false) // Disable USB data transfer
-            }
+            // if (dpm.isAdminActive(adminComponent)) {
+            //     dpm.setUsbDataSignalingEnabled(false) // Disable USB data transfer
+            // }
         }
     }
 }

@@ -9,5 +9,6 @@ enum AdminConfigEnum {
   lockAddUser,
   lockTetheringSettings,
   lockSafeBoot,
+  lockDateConfig,
   lockInstall
 }

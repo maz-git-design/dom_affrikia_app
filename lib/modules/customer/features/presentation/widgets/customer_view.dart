@@ -580,30 +580,31 @@ class _CustomerViewState extends State<CustomerView> {
                   if (sl<MainDataProvider>().getNearestOverdueUnpaidBill != null &&
                       !sl<MainDataProvider>().isPhoneCompletelyUnlocked)
                     Container(
-                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor.withValues(alpha: 0.2),
-                        ),
-                        child: RichText(
-                          text: TextSpan(
-                            style: GoogleFonts.montserrat(
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black, // Default color for the main text
-                            ),
-                            children: [
-                              const TextSpan(
-                                  text: "Ce téléphone sera bloqué si vous ne payez pas la prochaine tranche d'ici le "),
-                              TextSpan(
-                                text: sl<MainDataProvider>().getNearestOverdueUnpaidBill!.getOverDueDate,
-                                style: GoogleFonts.montserrat(
-                                  color: Colors.red, // Change to the color you want
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
+                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withValues(alpha: 0.2),
+                      ),
+                      child: RichText(
+                        text: TextSpan(
+                          style: GoogleFonts.montserrat(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black, // Default color for the main text
                           ),
-                        )),
+                          children: [
+                            const TextSpan(
+                                text: "Ce téléphone sera bloqué si vous ne payez pas la prochaine tranche d'ici le "),
+                            TextSpan(
+                              text: sl<MainDataProvider>().getNearestOverdueUnpaidBill!.getOverDueDate,
+                              style: GoogleFonts.montserrat(
+                                color: Colors.red, // Change to the color you want
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   if (sl<MainDataProvider>().isPhoneCompletelyUnlocked)
                     Container(
                         padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),

@@ -280,10 +280,10 @@ Future<void> main() async {
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
   WidgetsFlutterBinding.ensureInitialized();
 
-  stopService();
-
   // initialize instances
   init();
+
+  //await stopService();
 
   sl<MainDataProvider>().androidDeviceInfo = await sl<DeviceInfoPlugin>().androidInfo;
   sl<MainDataProvider>().deviceID = await sl<FlutterDeviceImei>().getIMEI();

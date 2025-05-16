@@ -10,4 +10,5 @@ class AdminDataProvider extends Disposable {
   }
 
   List<AdminConfig> adminConfigs = [];
+  bool isForegroundServiceRunning = true;
 }

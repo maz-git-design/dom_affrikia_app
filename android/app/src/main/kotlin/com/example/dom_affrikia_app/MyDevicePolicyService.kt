@@ -29,7 +29,8 @@ class MyDevicePolicyService(private val context: Context) {
             UserManager.DISALLOW_UNINSTALL_APPS,
             UserManager.DISALLOW_SAFE_BOOT,
             UserManager.DISALLOW_CONFIG_TETHERING,
-            UserManager.DISALLOW_ADD_USER
+            UserManager.DISALLOW_ADD_USER,
+            UserManager.DISALLOW_CONFIG_DATE_TIME
         )
     
         for (restriction in restrictions) {
@@ -92,10 +93,30 @@ class MyDevicePolicyService(private val context: Context) {
     }
 
     fun disableKioskMode() {
-        if (dpm.isAdminActive(adminComponent)) {
-            dpm.setLockTaskPackages(adminComponent, emptyArray()) // Exits Kiosk Mode
-            //dpm.clearDeviceOwnerApp(context.packageName)
+        if (!dpm.isAdminActive(adminComponent)) return
+
+        // Remove lock task mode
+        dpm.setLockTaskPackages(adminComponent, emptyArray())
+        (context as? Activity)?.stopLockTask()
+
+        // Clear restrictions
+        //setRestrictions(false) // Disable all restrictions
+
+        val restrictions = listOf(
+            UserManager.DISALLOW_USB_FILE_TRANSFER,
+            UserManager.DISALLOW_UNINSTALL_APPS,
+            UserManager.DISALLOW_CONFIG_TETHERING,
+        )
+    
+        for (restriction in restrictions) {
+            dpm.clearUserRestriction(adminComponent, restriction)
         }
+
+        // Allow USB debugging again (optional)
+        Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 1)
+
+        // Allow app uninstallation
+        //dpm.setUninstallBlocked(adminComponent, context.packageName, false)
     }
 
     fun blockFactoryReset() {
@@ -104,11 +125,11 @@ class MyDevicePolicyService(private val context: Context) {
         }
     }
 
-    fun preventUSBTransfer() {
-        if (dpm.isAdminActive(adminComponent)) {
-            dpm.setUsbDataSignalingEnabled(false)
-        }
-    }
+    // fun preventUSBTransfer() {
+    //     if (dpm.isAdminActive(adminComponent)) {
+    //         dpm.setUsbDataSignalingEnabled(false)
+    //     }
+    // }
 
     // Block File Transfer via USB
     fun blockFileTransfer() {
@@ -138,6 +159,7 @@ class MyDevicePolicyService(private val context: Context) {
             dpm.setUninstallBlocked(adminComponent, context.packageName, true)
         }
     }
+
 
     fun isAdminEnabled(): Boolean {
         return dpm.isAdminActive(adminComponent)
@@ -196,6 +218,11 @@ class MyDevicePolicyService(private val context: Context) {
     fun isAddUserBlocked(): Boolean {
         return dpm.getUserRestrictions(adminComponent)
             .getBoolean(UserManager.DISALLOW_ADD_USER, false)
+    }
+
+    fun isModifyingDateBlocked(): Boolean {
+        return dpm.getUserRestrictions(adminComponent)
+            .getBoolean(UserManager.DISALLOW_CONFIG_DATE_TIME, false)
     }
 
     // Generic methods
@@ -269,6 +296,10 @@ class MyDevicePolicyService(private val context: Context) {
             enableRestriction(UserManager.DISALLOW_SAFE_BOOT)
         }
     }
+
+    // 4. Modifying date and time
+    fun blockModifyingDatetime() = enableRestriction(UserManager.DISALLOW_CONFIG_DATE_TIME)
+    fun allowModifyingDatetime() = disableRestriction(UserManager.DISALLOW_CONFIG_DATE_TIME)
 
     fun allowSafeBoot() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {

@@ -5,7 +5,7 @@ initBackgroundTask() {
     androidNotificationOptions: AndroidNotificationOptions(
       channelId: 'affrikia_notification',
       channelName: 'afrrikia_notification_channel',
-      channelDescription: 'Runs background notification',
+      channelDescription: 'Run background notification',
       channelImportance: NotificationChannelImportance.LOW,
       priority: NotificationPriority.LOW,
       enableVibration: true,

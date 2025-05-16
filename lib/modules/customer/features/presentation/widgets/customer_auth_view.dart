@@ -5,6 +5,7 @@ import 'package:dom_affrikia_app/injection_container.dart';
 import 'package:dom_affrikia_app/modules/admin/features/presentation/bloc/admin/admin_bloc.dart';
 import 'package:dom_affrikia_app/modules/customer/features/presentation/bloc/customer/customer_bloc.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/bloc/navigation/bloc/navigation_bloc.dart';
+import 'package:dom_affrikia_app/modules/main/features/middleware/providers/main_data_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -193,6 +194,34 @@ class _CustomerAuthViewState extends State<CustomerAuthView> {
                             ),
                           ),
                           const SizedBox(height: 15.0),
+                          if (sl<MainDataProvider>().isPhoneLocked)
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).primaryColor.withValues(alpha: 0.2),
+                              ),
+                              child: RichText(
+                                text: TextSpan(
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black, // Default color for the main text
+                                  ),
+                                  children: [
+                                    const TextSpan(
+                                        text:
+                                            "Ce téléphone est bloqué. Veuillez vous connecter avec votre code d'activation initial pour réactiver le téléphone en payant la facture dûe du "),
+                                    TextSpan(
+                                      text: sl<MainDataProvider>().getNearestOverdueUnpaidBill!.getOverDueDate,
+                                      style: GoogleFonts.montserrat(
+                                        color: Colors.red, // Change to the color you want
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),

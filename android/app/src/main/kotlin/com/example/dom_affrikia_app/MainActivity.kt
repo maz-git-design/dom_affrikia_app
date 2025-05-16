@@ -74,13 +74,13 @@ class MainActivity : FlutterActivity() {
                     policyService.disableKioskModeFull()
                     result.success("Kiosk Mode Disabled")
                 }
+                "disableKioskModePartially" -> {
+                    policyService.disableKioskMode()
+                    result.success("Kiosk Mode Disabled partially")
+                }
                 "blockFactoryReset" -> {
                     policyService.blockFactoryReset()
                     result.success("Factory Reset Blocked")
-                }
-                "preventUSBTransfer" -> {
-                    policyService.preventUSBTransfer()
-                    result.success("USB Transfer Blocked")
                 }
                 "restrictSettings" -> {
                     policyService.restrictSettings()
@@ -105,6 +105,7 @@ class MainActivity : FlutterActivity() {
                 "getSafeBootStatus" -> result.success(policyService.isSafeBootBlocked())
                 "getTetheringStatus" -> result.success(policyService.isTetheringBlocked())
                 "getAddUserStatus" -> result.success(policyService.isAddUserBlocked())
+                "getDateTimeStatus" -> result.success(policyService.isModifyingDateBlocked())
                 "exitKioskMode" -> {
                     policyService.exitKioskMode()
                     result.success("Exited Kiosk Mode")
@@ -164,6 +165,14 @@ class MainActivity : FlutterActivity() {
                 "allowAddUser" -> {
                     policyService.allowAddUser()
                     result.success("Add User Allowed")
+                }
+                "blockDateConfig" -> {
+                    policyService.blockModifyingDatetime()
+                    result.success("Date config blocked")
+                }
+                "allowDateConfig" -> {
+                    policyService.allowModifyingDatetime()
+                    result.success("Date config allowed")
                 }
                 else -> result.notImplemented()
             }

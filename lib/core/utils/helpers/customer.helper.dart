@@ -83,6 +83,19 @@ getPhoneStatusFromState(PhoneStateEnum state) {
   }
 }
 
+getPhoneStatusFromStateString(String state) {
+  switch (state) {
+    case "0":
+      return "Desactivé";
+    case "1":
+      return "Activé partiellement";
+    case "2":
+      return "Activé complètement";
+    default:
+      return "Inconnu";
+  }
+}
+
 getPhoneStatusColorFromState(PhoneStateEnum state) {
   switch (state) {
     case PhoneStateEnum.lock:
