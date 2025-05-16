@@ -100,6 +100,7 @@ class MyTaskHandler extends TaskHandler {
         );
 
         await intent.sendBroadcast();
+        await _secureStorage.write(key: "phoneState", value: "0");
       }
        }
       
