@@ -86,8 +86,10 @@ class MyTaskHandler extends TaskHandler {
 
     if (hasOverdue != null && hasOverdue) {
       // Enable kiosk mode
+       var phoneState = await _secureStorage.read(key: "phoneState");
 
-      if (Platform.isAndroid) {
+       if(phoneState !=null && phoneState == "1") {
+        if (Platform.isAndroid) {
         const intent = AndroidIntent(
           action: 'com.example.dom_affrikia_app.ACTION_ADMIN',
           package: 'com.example.dom_affrikia_app', // Replace with your actual package name
@@ -99,6 +101,8 @@ class MyTaskHandler extends TaskHandler {
 
         await intent.sendBroadcast();
       }
+       }
+      
     }
   }
 
