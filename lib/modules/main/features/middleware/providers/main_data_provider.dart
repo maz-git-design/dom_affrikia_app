@@ -64,8 +64,9 @@ class MainDataProvider extends Disposable {
   String get getBillFormatted => billTypeToString(billType);
   List<BillType> get getBillTypes => billTypes.where((type) => type.isOpen == 1).toList();
 
-  String get getDevicePrice =>
-      device == null ? '??' : NumberFormat.currency(symbol: "GNF ", locale: 'fr').format(device!.devicePrice!);
+  String get getDevicePrice => device == null
+      ? '??'
+      : NumberFormat.currency(symbol: "GNF ", locale: 'fr', decimalDigits: 0).format(device!.devicePrice!);
   bool shouldRetry = false;
 
   Customer? customerInfo;
@@ -103,7 +104,7 @@ class MainDataProvider extends Disposable {
         totalAmount += bill.billAmount!;
       }
     }
-    return NumberFormat.currency(symbol: "GNF ", locale: 'fr').format(totalAmount);
+    return NumberFormat.currency(symbol: "GNF ", locale: 'fr', decimalDigits: 0).format(totalAmount);
   }
 
   Bill? get getNearestOverdueUnpaidBill {

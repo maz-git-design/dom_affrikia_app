@@ -523,7 +523,7 @@ class _CustomerViewState extends State<CustomerView> {
                           Row(
                             children: [
                               Text(
-                                "Montant total restant",
+                                "Reste à payer",
                                 style: TextStyle(
                                   fontSize: 14.sp,
                                   fontWeight: FontWeight.w900,

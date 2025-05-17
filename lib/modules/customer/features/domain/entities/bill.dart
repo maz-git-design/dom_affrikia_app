@@ -119,6 +119,7 @@ class Bill extends Equatable {
   // bool get isOverdue => overdueTime!= null && overdueTime.isBefore(DateTime.now());
   bool get hasOverdue => overdueTime != null;
   String get getOverDueDate => overdueTime != null ? DateFormat('dd-MM-yyyy').format(overdueTime!) : "Pas de date";
-  String get getBillAmount =>
-      billAmount != null ? NumberFormat.currency(symbol: "GNF ", locale: 'fr').format(billAmount!) : "Pas trouvé";
+  String get getBillAmount => billAmount != null
+      ? NumberFormat.currency(symbol: "GNF ", locale: 'fr', decimalDigits: 0).format(billAmount!)
+      : "Pas trouvé";
 }
