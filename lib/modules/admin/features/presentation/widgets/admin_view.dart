@@ -39,6 +39,11 @@ class _AdminViewState extends State<AdminView> {
   void initState() {
     super.initState();
     sl<AdminBloc>().add(AdminLoadData());
+    getRunningServiceState();
+  }
+
+  void getRunningServiceState() async {
+    sl<AdminDataProvider>().isForegroundServiceRunning = await FlutterForegroundTask.isRunningService;
   }
 
   @override

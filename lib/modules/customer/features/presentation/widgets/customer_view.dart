@@ -380,24 +380,25 @@ class _CustomerViewState extends State<CustomerView> {
                                     style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.sp)),
                               ),
                               const Spacer(),
-                              IconButton(
-                                icon: Icon(
-                                  Icons.refresh,
-                                  color: Theme.of(context).primaryColor,
+                              if (!sl<MainDataProvider>().isPhoneCompletelyUnlocked)
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.refresh,
+                                    color: Theme.of(context).primaryColor,
+                                  ),
+                                  style: IconButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 0),
+                                    visualDensity: VisualDensity.compact,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    alignment: Alignment.center,
+                                    backgroundColor: Colors.grey.shade200,
+                                    elevation: 8,
+                                  ),
+                                  splashRadius: 10,
+                                  onPressed: () {
+                                    sl<CustomerBloc>().add(CustomerGetBills());
+                                  },
                                 ),
-                                style: IconButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 0),
-                                  visualDensity: VisualDensity.compact,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                  alignment: Alignment.center,
-                                  backgroundColor: Colors.grey.shade200,
-                                  elevation: 8,
-                                ),
-                                splashRadius: 10,
-                                onPressed: () {
-                                  sl<CustomerBloc>().add(CustomerGetBills());
-                                },
-                              ),
                             ],
                           ),
                           SizedBox(height: 5.h),

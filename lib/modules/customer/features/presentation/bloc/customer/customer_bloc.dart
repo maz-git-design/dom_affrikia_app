@@ -150,6 +150,19 @@ class CustomerBloc extends Bloc<CustomerEvent, CustomerState> {
     });
     on<CustomerPayBill>((event, emit) async {
       emit(CustomerLoading());
+
+      /// Test full payement process code
+
+      // mainDataProvider.bills = mainDataProvider.bills
+      //     .map((bill) => bill.copyWith(
+      //           billStatus: 2,
+      //           payTime: DateTime.now(),
+      //         ))
+      //     .toList();
+      // await secureStorage.write(key: "bills", value: mainDataProvider.convertBillsToJson());
+      // billListNotifier.changeAllBills(mainDataProvider.bills);
+      // emit(const CustomerPaymentSuccess("Paiment effectué avec succès"));
+
       var isOk = false;
       var orderId = "";
       var message =
@@ -188,7 +201,7 @@ class CustomerBloc extends Bloc<CustomerEvent, CustomerState> {
 
       if (isOk) {
         var billIndex = mainDataProvider.bills.indexOf(event.billToPay);
-        var orderStatus = 3; // Payment is in progress
+        //var orderStatus = 3; // Payment is in progress
 
         if (billIndex != -1) {
           mainDataProvider.bills[billIndex] = event.billToPay.copyWith(lastOrderId: orderId);
@@ -212,10 +225,10 @@ class CustomerBloc extends Bloc<CustomerEvent, CustomerState> {
               isGetStatusOk = true;
               var billUpdated = Bill.fromJson(json['data']['bill']);
               var order = Order.fromJson(json['data']['order']);
-              orderStatus = order.status ?? 3;
+              var orderStatus = order.status ?? 3;
 
               // If the order status is not 3 (Payment is processing)
-              if (order.status != 3) {
+              if (orderStatus != 3) {
                 mainDataProvider.bills[billIndex] = billUpdated;
                 if (billUpdated.billStatus == 2) {
                   message = "Votre paiement a été effectué avec succès!";
@@ -234,10 +247,6 @@ class CustomerBloc extends Bloc<CustomerEvent, CustomerState> {
           await secureStorage.write(key: "bills", value: mainDataProvider.convertBillsToJson());
           emit(CustomerPaymentSuccess(message));
         }
-        // while (orderStatus == 3 && !hasError && counter < 4) {
-
-        //   counter++;
-        // }
       }
     });
     on<CustomerGetTransactionStatus>((event, emit) async {

@@ -174,7 +174,7 @@ class MyTaskHandler extends TaskHandler {
         FlutterForegroundTask.updateService(
           notificationTitle: 'Bienvenu chez afrikia',
           notificationText:
-              "Bravo!Votre téléphone est à présent complètement activé. Vous pouvez l'utiliser avec toutes ses fonctionnalités",
+              "Bravo! Votre téléphone est à présent complètement activé. Vous pouvez l'utiliser avec toutes ses fonctionnalités",
           // notificationButtons: [
           //   const NotificationButton(id: 'btn_hello', text: 'OK'),
           // ],
