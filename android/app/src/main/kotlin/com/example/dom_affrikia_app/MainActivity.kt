@@ -18,6 +18,12 @@ class MainActivity : FlutterActivity() {
     private val CHANNEL = "device_admin"
     private lateinit var policyService: MyDevicePolicyService
 
+
+    private fun isDebug(): Boolean {
+        return applicationContext.applicationInfo.flags and
+                android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         policyService = MyDevicePolicyService(this)
@@ -27,6 +33,14 @@ class MainActivity : FlutterActivity() {
         if (action == "enableKioskMode") {
             Log.d("MainActivity", "Received action to enable kiosk mode")
             policyService.enableKioskModeFull()
+        }
+
+        if (isDebug()) {
+            Log.d("MainActivity", "App is in DEBUG mode")
+            // Do debug-specific logic here
+        } else {
+            Log.d("MainActivity", "App is in RELEASE mode")
+            // Do release-specific logic here
         }
     }
 
@@ -49,6 +63,14 @@ class MainActivity : FlutterActivity() {
                 "enableAdmin" -> {
                     policyService.enableAdmin()
                     result.success("Admin Enabled")
+                }
+                "getIMEI" -> {
+                    val imei = policyService.getIMEI()
+                    if (imei != null) {
+                        result.success(imei)
+                    } else {
+                        result.error("UNAVAILABLE", "Could not retrieve IMEI", null)
+                    }
                 }
                 "lockDevice" -> {
                     policyService.lockDevice()
@@ -106,6 +128,7 @@ class MainActivity : FlutterActivity() {
                 "getTetheringStatus" -> result.success(policyService.isTetheringBlocked())
                 "getAddUserStatus" -> result.success(policyService.isAddUserBlocked())
                 "getDateTimeStatus" -> result.success(policyService.isModifyingDateBlocked())
+                "getAdbDebuggingStatus" -> result.success(policyService.isAdbDebuggingBlocked())
                 "exitKioskMode" -> {
                     policyService.exitKioskMode()
                     result.success("Exited Kiosk Mode")
@@ -173,6 +196,14 @@ class MainActivity : FlutterActivity() {
                 "allowDateConfig" -> {
                     policyService.allowModifyingDatetime()
                     result.success("Date config allowed")
+                }
+                "blockAdbDebugging" -> {
+                    policyService.blockAdbDebugging()
+                    result.success("Adb debugging blocked")
+                }
+                "allowAdbDebugging" -> {
+                    policyService.allowAdbDebugging()
+                    result.success("Adb debugging allowed")
                 }
                 else -> result.notImplemented()
             }

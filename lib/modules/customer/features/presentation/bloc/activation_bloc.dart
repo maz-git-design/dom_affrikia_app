@@ -31,6 +31,7 @@ class ActivationBloc extends Bloc<ActivationEvent, ActivationState> {
       this.dioClient, this.mainDataProvider, this.options, this.networkInfo, this.secureStorage, this.billListNotifier)
       : super(ActivationInitial()) {
     options.headers?["deviceId"] = mainDataProvider.getDeviceID;
+    options.headers?["deviceTypeId"] = "1";
     on<ActivationActivate>((event, emit) async {
       // Handle ActivationActivate event
       emit(ActivationLoading());

@@ -1,6 +1,5 @@
 import 'dart:developer';
 
-import 'package:dom_affrikia_app/background_task.dart';
 import 'package:dom_affrikia_app/core/enums/phone-state.enum.dart';
 import 'package:dom_affrikia_app/modules/customer/features/domain/entities/bill.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/providers/main_data_provider.dart';
@@ -52,17 +51,11 @@ class BillListNotifier extends ChangeNotifier {
     _onChange();
   }
 
-  void _sendDataToTask() {
-    // Main(UI) -> TaskHandler
-    //
-    // The Map collection can only be sent in json format, such as Map<String, dynamic>.
-    FlutterForegroundTask.sendDataToTask(Object);
-  }
-
   calculatePhoneState() async {
     if (hasBillTopay() && !hasBillOverdue()) {
       mainDataProvider.phoneState = PhoneStateEnum.unlockPartially;
       await secureStorage.write(key: "phoneState", value: PhoneStateEnum.unlockPartially.index.toString());
+      await secureStorage.write(key: "hasDataToSend", value: "1");
 
       final Map<String, dynamic> data = {
         "phoneState": 1,
@@ -73,15 +66,17 @@ class BillListNotifier extends ChangeNotifier {
     } else if (hasBillTopay() && hasBillOverdue()) {
       mainDataProvider.phoneState = PhoneStateEnum.lock;
       await secureStorage.write(key: "phoneState", value: PhoneStateEnum.lock.index.toString());
+      await secureStorage.write(key: "hasDataToSend", value: "1");
       // final Map<String, dynamic> data = {
       //   "phoneState": 0,
       // };
       // FlutterForegroundTask.sendDataToTask(data);
       await enableKioskMode();
-      log("phone locked");
+      log("phone locked for overdue");
     } else if (paidAllBill()) {
       mainDataProvider.phoneState = PhoneStateEnum.unlock;
       await secureStorage.write(key: "phoneState", value: PhoneStateEnum.unlock.index.toString());
+      await secureStorage.write(key: "hasDataToSend", value: "1");
 
       final Map<String, dynamic> data = {
         "phoneState": 2,

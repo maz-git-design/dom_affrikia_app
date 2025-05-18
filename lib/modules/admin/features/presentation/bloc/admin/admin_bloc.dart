@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:bloc/bloc.dart';
+import 'package:dom_affrikia_app/core/config/config.dart';
 import 'package:dom_affrikia_app/core/enums/admin.config.dart';
 import 'package:dom_affrikia_app/core/enums/user.enum.dart';
 import 'package:dom_affrikia_app/injection_container.dart';
@@ -140,6 +141,18 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
             emit(AdminError(message: message));
           }
           break;
+        case AdminConfigEnum.lockAdb:
+          try {
+            message =
+                await methodChannel.invokeMethod<String>(event.newState ? 'blockAdbDebugging' : 'allowAdbDebugging');
+            adminDataProvider.adminConfigs[event.optionIndex] =
+                adminDataProvider.adminConfigs[event.optionIndex].copyWith(state: event.newState);
+            emit(AdminConfigChanged(message: message ?? ""));
+          } catch (e) {
+            message = "Erreur ${e.toString()}";
+            emit(AdminError(message: message));
+          }
+          break;
         default:
           break;
       }
@@ -159,6 +172,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
         final tetheringStatus = await methodChannel.invokeMethod<bool>('getTetheringStatus');
         final addUserStatus = await methodChannel.invokeMethod<bool>('getAddUserStatus');
         final dateConfigStatus = await methodChannel.invokeMethod<bool>('getDateTimeStatus');
+        final adbDebuggingStatus = await methodChannel.invokeMethod<bool>('getAdbDebuggingStatus');
 
         log("Admin status: $adminStatus");
         log("Kiosk status: $kioskStatus");
@@ -242,6 +256,13 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
             methodName: "",
             icon: MdiIcons.accountCancel,
           ),
+          AdminConfig(
+            title: "Désactiver l'ADB",
+            config: AdminConfigEnum.lockAdb,
+            state: adbDebuggingStatus!,
+            methodName: "",
+            icon: MdiIcons.debugStepInto,
+          ),
         ];
         emit(AdminLoaded());
       },
@@ -264,7 +285,8 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     on<AdminCleanData>((_, emit) async {
       emit(AdminLoading());
       await secureStorage.deleteAll();
-      await secureStorage.write(key: "adminPassword", value: "1234");
+      await secureStorage.write(key: "adminPassword", value: ADMIN_PASSWORD);
+      await secureStorage.write(key: "phoneIMEI", value: sl<MainDataProvider>().deviceID);
       sl<MainDataProvider>().cleanData();
       var message = await methodChannel.invokeMethod<String>('enableKioskMode');
       log("Phone disabled: $message");

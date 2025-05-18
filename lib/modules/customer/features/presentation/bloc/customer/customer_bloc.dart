@@ -36,6 +36,7 @@ class CustomerBloc extends Bloc<CustomerEvent, CustomerState> {
     this.mainDataProvider,
   ) : super(CustomerInitial()) {
     options.headers?["deviceId"] = mainDataProvider.getDeviceID;
+    options.headers?["deviceTypeId"] = "1";
     on<CustomerLoadInfo>((event, emit) async {
       emit(CustomerLoading());
 

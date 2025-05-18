@@ -115,7 +115,7 @@ Future<void> init() async {
     ),
   );
 
-  sl.registerLazySingleton(() => Options(headers: {'Content-Type': 'application/json'}));
+  sl.registerLazySingleton(() => Options(headers: {'Content-Type': 'application/json', 'deviceTypeId': '1'}));
   sl.registerLazySingleton(() => DioConnectivityRequestRetrier(connectivity: sl(), dio: sl()));
 
   sl.registerLazySingleton(() => AppInterceptors(requestRetrier: sl()));

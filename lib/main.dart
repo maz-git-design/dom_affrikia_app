@@ -239,6 +239,7 @@ import 'package:dom_affrikia_app/background_task.dart';
 import 'package:dom_affrikia_app/core/errors/bloc/error_bloc.dart';
 import 'package:dom_affrikia_app/core/ui/themes/app_themes.dart';
 import 'package:dom_affrikia_app/core/ui/themes/bloc/theme_bloc.dart';
+import 'package:dom_affrikia_app/get_imei.dart';
 import 'package:dom_affrikia_app/init_background_task.dart';
 import 'package:dom_affrikia_app/init_storage.dart';
 import 'package:dom_affrikia_app/modules/admin/features/presentation/bloc/admin/admin_bloc.dart';
@@ -258,6 +259,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_device_imei/flutter_device_imei.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'injection_container.dart';
 
@@ -286,7 +288,9 @@ Future<void> main() async {
   //await stopService();
 
   sl<MainDataProvider>().androidDeviceInfo = await sl<DeviceInfoPlugin>().androidInfo;
-  sl<MainDataProvider>().deviceID = await sl<FlutterDeviceImei>().getIMEI();
+  await initImei();
+  PackageInfo packageInfo = await PackageInfo.fromPlatform();
+  log("App version: $packageInfo");
 
   //sl<FlutterSecureStorage>().deleteAll();
   // init storage
@@ -308,7 +312,7 @@ Future<void> main() async {
   Bloc.observer = AppBlocObserver();
 
   // await sl<AdminBloc>().add(AdminLoad());
-  DartPluginRegistrant.ensureInitialized();
+  //DartPluginRegistrant.ensureInitialized();
   runApp(const MyApp());
   //runApp(DevicePreview(enabled: !kReleaseMode, builder: (context) => const MyApp()));
 }

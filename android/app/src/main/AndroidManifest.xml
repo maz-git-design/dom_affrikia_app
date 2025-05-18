@@ -20,6 +20,7 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <!-- <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE" /> -->
 
 
     <!-- Required for certain restrictions (device owner only) -->
@@ -105,6 +106,28 @@
         <receiver android:name=".AdminActionReceiver" android:enabled="true" android:exported="true">
             <intent-filter>
                 <action android:name="com.example.dom_affrikia_app.ACTION_ADMIN" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".ApkInstallReceiver"
+            android:exported="true">
+
+             <!-- REQUIRED: System broadcast from PackageInstaller -->
+            <intent-filter>
+                <action android:name="com.android.packageinstaller.ACTION_INSTALL_COMMIT" />
+            </intent-filter>
+
+            
+            <intent-filter>
+                <action android:name="com.example.dom_affrikia_app.APK_INSTALL_STARTED"/>
+                <action android:name="com.example.dom_affrikia_app.APK_INSTALL_PROGRESS"/>
+                <action android:name="com.example.dom_affrikia_app.APK_INSTALL_DONE"/>
+                <action android:name="com.example.dom_affrikia_app.APK_INSTALL_ERROR"/>
+                <action android:name="com.example.dom_affrikia_app.APK_DOWNLOAD_STARTED"/>
+                <action android:name="com.example.dom_affrikia_app.APK_DOWNLOAD_PROGRESS"/>
+                <action android:name="com.example.dom_affrikia_app.APK_DOWNLOAD_DONE"/>
+                <action android:name="com.example.dom_affrikia_app.APK_DOWNLOAD_ERROR"/>
             </intent-filter>
         </receiver>
 

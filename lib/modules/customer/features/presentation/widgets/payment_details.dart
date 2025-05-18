@@ -73,7 +73,7 @@ class _PaymentDetailsState extends State<PaymentDetails> {
                 key: formKey,
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                  child: sl<MainDataProvider>().getNearestOverdueUnpaidBill != null
+                  child: sl<MainDataProvider>().hasBillNearest
                       ? Column(
                           children: [
                             Text("Paiement", style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
@@ -141,6 +141,32 @@ class _PaymentDetailsState extends State<PaymentDetails> {
                                 ],
                               ),
                             ),
+                            if (sl<MainDataProvider>().hasBillNearest &&
+                                sl<MainDataProvider>().getNearestOverdueUnpaidBill!.lastOrderId != null)
+                              SizedBox(height: 10.h),
+                            if (sl<MainDataProvider>().hasBillNearest &&
+                                sl<MainDataProvider>().getNearestOverdueUnpaidBill!.lastOrderId != null)
+                              Row(
+                                children: [
+                                  TextButton.icon(
+                                    onPressed: sl<MainDataProvider>().hasBillNearest
+                                        ? () {
+                                            sl<CustomerBloc>().add(CustomerGetTransactionStatus(
+                                                orderId:
+                                                    sl<MainDataProvider>().getNearestOverdueUnpaidBill!.lastOrderId!,
+                                                billIndex: sl<MainDataProvider>().getBillIndexOfNearestBillToPay()));
+                                          }
+                                        : null,
+                                    icon: const Icon(Icons.refresh),
+                                    label: const Text("Actualiser le denier paiement"),
+                                    style: TextButton.styleFrom(
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                      alignment: Alignment.center,
+                                      padding: EdgeInsets.only(right: 4.w, left: 4.w),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             SizedBox(height: 10.h),
                             Row(
                               children: <Widget>[
@@ -226,7 +252,8 @@ class _PaymentDetailsState extends State<PaymentDetails> {
                                   padding: EdgeInsets.only(top: 12.h, bottom: 12.h),
                                   backgroundColor: Theme.of(context).primaryColor,
                                 ),
-                                onPressed: RegExp(r'^\d{9}$').hasMatch(phoneController.text.trim())
+                                onPressed: RegExp(r'^\d{9}$').hasMatch(phoneController.text.trim()) &&
+                                        sl<MainDataProvider>().getNearestOverdueUnpaidBill!.lastOrderId == null
                                     ? () {
                                         FocusScopeNode currentFocus = FocusScope.of(context);
 

@@ -117,3 +117,16 @@ getPhoneStatusIconDataFromState(PhoneStateEnum state) {
       return MdiIcons.lockOpen;
   }
 }
+
+getPhoneServerStatusFromStateString(String state) {
+  switch (state) {
+    case "0":
+      return "3"; // Overdue
+    case "1":
+      return "2"; // Repayment
+    case "2":
+      return "4"; // Cleared , Paid totally
+    default:
+      return "1"; // Activated
+  }
+}

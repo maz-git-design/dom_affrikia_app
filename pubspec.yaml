@@ -66,6 +66,8 @@ dependencies:
   device_preview: ^1.2.0
   flutter_foreground_task: ^8.16.0
   rename_app: ^1.6.3
+  flutter_broadcasts_plus: ^0.0.4
+  package_info_plus: ^8.3.0
 
 dev_dependencies:
   flutter_test:

@@ -91,7 +91,6 @@ class MainDataProvider extends Disposable {
   }
 
   void loadBillsFromJson(String jsonString) {
-    log("comment $jsonString");
     final List<dynamic> jsonList = jsonDecode(jsonString);
     bills = jsonList.map((json) => Bill.fromJson(json)).toList();
   }
@@ -129,6 +128,18 @@ class MainDataProvider extends Disposable {
 
   bool get isPhoneCompletelyUnlocked => phoneState == PhoneStateEnum.unlock;
   bool get isPhoneLocked => phoneState == PhoneStateEnum.lock;
+
+  int getBillIndex(Bill bill) => bills.indexWhere((b) => b.id == bill.id);
+
+  int getBillIndexOfNearestBillToPay() {
+    var nearestBillToPay = getNearestOverdueUnpaidBill;
+    if (nearestBillToPay == null) {
+      return -1;
+    }
+    return bills.indexWhere((b) => b.id == nearestBillToPay.id);
+  }
+
+  bool get hasBillNearest => getNearestOverdueUnpaidBill != null;
 
   cleanData() {
     customerInfo = null;

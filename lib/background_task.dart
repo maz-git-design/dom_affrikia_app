@@ -4,13 +4,17 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:android_intent_plus/android_intent.dart';
-import 'package:dom_affrikia_app/core/enums/phone-state.enum.dart';
+import 'package:dio/dio.dart';
+import 'package:dom_affrikia_app/core/config/config.dart';
+import 'package:dom_affrikia_app/core/request/request_to_back_end.dart';
+import 'package:dom_affrikia_app/core/request/request_to_back_end_repo_call.dart';
 import 'package:dom_affrikia_app/core/utils/helpers/customer.helper.dart';
 import 'package:dom_affrikia_app/modules/customer/features/domain/entities/bill.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_broadcasts_plus/flutter_broadcasts.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:intl/intl.dart';
 
 // void startMyBackgroundTask() async {
@@ -65,8 +69,19 @@ void startCallback() {
 }
 
 class MyTaskHandler extends TaskHandler {
+  BroadcastReceiver? _apkReceiver;
   static const FlutterSecureStorage _secureStorage =
       FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
+  static final InternetConnectionChecker internetConnectionChecker = InternetConnectionChecker.createInstance();
+
+  static final Options options = Options(headers: {'Content-Type': 'application/json', 'deviceTypeId': '1'});
+  static final Dio _dio = Dio(
+    BaseOptions(
+      baseUrl: API_URL,
+      connectTimeout: const Duration(seconds: 60000),
+      receiveTimeout: const Duration(seconds: 60000),
+    ),
+  );
 
   // Called when the task is started.
   @override
@@ -77,16 +92,75 @@ class MyTaskHandler extends TaskHandler {
     log('onStart(starter: ${starter.name})');
   }
 
-  // Called based on the eventAction set in ForegroundTaskOptions.
-  @override
-  void onRepeatEvent(DateTime timestamp) async {
-    // Send data to main isolate.
-    final Map<String, dynamic> data = {
-      "timestampMillis": timestamp.millisecondsSinceEpoch,
-    };
-    FlutterForegroundTask.sendDataToMain(data);
-    log('onRepeatEvent(timestamp: $timestamp)');
+  Future<void> sendStatustoServer() async {
+    var hasStatusToSend = await _secureStorage.read(key: "hasDataToSend");
 
+    var isConnected = await internetConnectionChecker.hasConnection;
+    var phoneState = await _secureStorage.read(key: "phoneState");
+
+    if (hasStatusToSend != null && hasStatusToSend == "1" && isConnected && phoneState != null) {
+      var deviceId = await _secureStorage.read(key: "phoneIMEI");
+      var status = getPhoneServerStatusFromStateString(phoneState);
+      options.headers?["deviceId"] = deviceId;
+      log('sendStatus');
+      log("status: $status");
+      log("deviceId: $deviceId");
+      final response = await remoteDataSourceCall<dynamic>(
+        () => requestToBackend(
+          () => _dio.put('/device/updateDeviceStatus?status=$status', options: options),
+          (json) => json,
+        ),
+        internetConnectionChecker.hasConnection,
+      );
+
+      response.fold(
+        (failure) => log(failure.toString(), name: "send status to server"),
+        (json) async {
+          if (json['ok']) {
+            await _secureStorage.write(key: "hasDataToSend", value: "0");
+            log("status data sent to server");
+          } else {
+            log("error sending data status");
+          }
+        },
+      );
+    }
+  }
+
+  Future<void> overDueHandler() async {
+    var hasOverdue = await hasOverdueBill();
+    log("Has overdue bill: $hasOverdue");
+
+    if (hasOverdue != null && hasOverdue) {
+      // Enable kiosk mode
+      var phoneState = await _secureStorage.read(key: "phoneState");
+
+      if (phoneState != null && phoneState == "1") {
+        if (Platform.isAndroid) {
+          const intent = AndroidIntent(
+            action: 'com.example.dom_affrikia_app.ACTION_ADMIN',
+            package: 'com.example.dom_affrikia_app',
+            componentName: 'com.example.dom_affrikia_app.AdminActionReceiver',
+            arguments: {'action': 'enableKioskMode'},
+          );
+
+          await intent.sendBroadcast();
+          await _secureStorage.write(key: "phoneState", value: "0");
+        }
+
+        await _secureStorage.write(key: "hasDataToSend", value: "1");
+        final Map<String, dynamic> data = {
+          "phoneState": 0,
+        };
+        FlutterForegroundTask.sendDataToMain(data);
+
+        // send overdue to server
+        await sendStatustoServer();
+      }
+    }
+  }
+
+  Future<void> updateNofification() async {
     var upcoming = await getUpcomingOverdueBillsWithin7Days();
     var phoneState = await _secureStorage.read(key: "phoneState");
     if (upcoming.isNotEmpty && phoneState != null && phoneState == "1") {
@@ -111,36 +185,73 @@ class MyTaskHandler extends TaskHandler {
         ),
       );
     }
+  }
 
-    var hasOverdue = await hasOverdueBill();
+  Future<void> updateApkHandler() async {
+    const intent = AndroidIntent(
+      action: 'com.example.dom_affrikia_app.ACTION_ADMIN',
+      package: 'com.example.dom_affrikia_app',
+      componentName: 'com.example.dom_affrikia_app.AdminActionReceiver',
+      arguments: {
+        'action': 'installApk',
+        'apkUrl': 'https://example.com/path/to/your.apk',
+      },
+    );
 
-    log("Has overdue bill: $hasOverdue");
+    await intent.sendBroadcast();
+  }
 
-    if (hasOverdue != null && hasOverdue) {
-      // Enable kiosk mode
-      var phoneState = await _secureStorage.read(key: "phoneState");
+  void startApkInstallReceiver() {
+    _apkReceiver = BroadcastReceiver(
+      names: [
+        'com.example.dom_affrikia_app.APK_DOWNLOAD_STARTED',
+        'com.example.dom_affrikia_app.APK_DOWNLOAD_PROGRESS',
+        'com.example.dom_affrikia_app.APK_DOWNLOAD_DONE',
+        'com.example.dom_affrikia_app.APK_DOWNLOAD_ERROR',
+      ],
+    );
 
-      if (phoneState != null && phoneState == "1") {
-        if (Platform.isAndroid) {
-          const intent = AndroidIntent(
-            action: 'com.example.dom_affrikia_app.ACTION_ADMIN',
-            package: 'com.example.dom_affrikia_app', // Replace with your actual package name
-            componentName: 'com.example.dom_affrikia_app.AdminActionReceiver',
-            arguments: {
-              'action': 'enableKioskMode',
-            },
-          );
+    _apkReceiver!.messages.listen((message) {
+      final action = message.name;
+      final data = message.data;
 
-          await intent.sendBroadcast();
-          await _secureStorage.write(key: "phoneState", value: "0");
-        }
-
-        final Map<String, dynamic> data = {
-          "phoneState": 0,
-        };
-        FlutterForegroundTask.sendDataToMain(data);
+      if (action == 'com.example.dom_affrikia_app.APK_DOWNLOAD_PROGRESS') {
+        final progress = data?['progress'] ?? 0;
+        log('Download Progress: $progress%');
+      } else if (action == 'com.example.dom_affrikia_app.APK_DOWNLOAD_ERROR') {
+        final error = data?['error'] ?? 'Unknown error';
+        log('Installation Error: $error');
+        stopApkInstallReceiver();
+      } else if (action == 'com.example.dom_affrikia_app.APK_DOWNLOAD_DONE') {
+        log('Installation completed.');
+        stopApkInstallReceiver();
       }
-    }
+    });
+
+    _apkReceiver!.start();
+  }
+
+  void stopApkInstallReceiver() {
+    _apkReceiver?.stop();
+    _apkReceiver = null;
+  }
+
+  // Called based on the eventAction set in ForegroundTaskOptions.
+  @override
+  void onRepeatEvent(DateTime timestamp) async {
+    // Send data to main isolate.
+    final Map<String, dynamic> data = {
+      "timestampMillis": timestamp.millisecondsSinceEpoch,
+    };
+    //FlutterForegroundTask.sendDataToMain(data);
+    log('onRepeatEvent(timestamp: $timestamp)');
+
+    // Update notifications
+    await updateNofification();
+    // Send status of device to server
+    await sendStatustoServer();
+    // Check for overdue bills and block the phone if any are found
+    await overDueHandler();
   }
 
   // Called when the task is destroyed.

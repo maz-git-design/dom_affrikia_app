@@ -10,6 +10,12 @@ import android.app.ActivityManager
 import android.os.UserManager
 import android.app.KeyguardManager
 import android.os.Bundle
+import android.os.Build
+import android.Manifest
+import android.content.pm.PackageManager
+import android.telephony.TelephonyManager
+import android.util.Log
+import androidx.core.app.ActivityCompat
 
 
 class MyDevicePolicyService(private val context: Context) {
@@ -19,6 +25,28 @@ class MyDevicePolicyService(private val context: Context) {
         context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
     private val adminComponent: ComponentName =
         ComponentName(context, MyDeviceAdminReceiver::class.java)
+
+    private fun isDebug(): Boolean {
+        return context.applicationInfo.flags and
+                android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0
+    }
+
+    fun getIMEI(): String? {
+        Log.d("IMEI", "In getIMEI function")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+                val imei = telephonyManager.imei
+                Log.d("IMEI", "Device IMEI: $imei")
+                return imei
+            } else {
+                Log.e("IMEI", "Permission not granted")
+            }
+        } else {
+            Log.e("IMEI", "SDK version < O, not supported")
+        }
+        return null
+    }
 
     fun setRestrictions(enable: Boolean) {
         if (!dpm.isAdminActive(adminComponent)) return
@@ -92,32 +120,6 @@ class MyDevicePolicyService(private val context: Context) {
         }
     }
 
-    fun disableKioskMode() {
-        if (!dpm.isAdminActive(adminComponent)) return
-
-        // Remove lock task mode
-        dpm.setLockTaskPackages(adminComponent, emptyArray())
-        (context as? Activity)?.stopLockTask()
-
-        // Clear restrictions
-        //setRestrictions(false) // Disable all restrictions
-
-        val restrictions = listOf(
-            UserManager.DISALLOW_USB_FILE_TRANSFER,
-            UserManager.DISALLOW_UNINSTALL_APPS,
-            UserManager.DISALLOW_CONFIG_TETHERING,
-        )
-    
-        for (restriction in restrictions) {
-            dpm.clearUserRestriction(adminComponent, restriction)
-        }
-
-        // Allow USB debugging again (optional)
-        Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 1)
-
-        // Allow app uninstallation
-        //dpm.setUninstallBlocked(adminComponent, context.packageName, false)
-    }
 
     fun blockFactoryReset() {
         if (dpm.isAdminActive(adminComponent)) {
@@ -225,6 +227,10 @@ class MyDevicePolicyService(private val context: Context) {
             .getBoolean(UserManager.DISALLOW_CONFIG_DATE_TIME, false)
     }
 
+    fun isAdbDebuggingBlocked(): Boolean {
+        return Settings.Global.getInt(context.contentResolver, Settings.Global.ADB_ENABLED, 0) == 0
+    }
+
     // Generic methods
     private fun enableRestriction(restriction: String) {
         if (dpm.isAdminActive(adminComponent)) {
@@ -250,10 +256,46 @@ class MyDevicePolicyService(private val context: Context) {
         
 
         // Prevent USB debugging (optional)
-        Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 0)
+        if (isDebug()) {
+            Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 1)
+        } else {
+            Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 0)
+        }
+        
 
         // Block uninstallation of your app
         dpm.setUninstallBlocked(adminComponent, context.packageName, true)
+    }
+
+    fun disableKioskMode() {
+        if (!dpm.isAdminActive(adminComponent)) return
+
+        // Remove lock task mode
+        dpm.setLockTaskPackages(adminComponent, emptyArray())
+        (context as? Activity)?.stopLockTask()
+
+        // Clear restrictions
+        //setRestrictions(false) // Disable all restrictions
+
+        val restrictions = listOf(
+            UserManager.DISALLOW_USB_FILE_TRANSFER,
+            UserManager.DISALLOW_UNINSTALL_APPS,
+            UserManager.DISALLOW_CONFIG_TETHERING,
+        )
+    
+        for (restriction in restrictions) {
+            dpm.clearUserRestriction(adminComponent, restriction)
+        }
+
+        // Allow USB debugging again (optional)
+        if (isDebug()) {
+            Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 1)
+        } else {
+            Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 0)
+        }
+
+        // Allow app uninstallation
+        //dpm.setUninstallBlocked(adminComponent, context.packageName, false)
     }
 
     fun disableKioskModeFull() {
@@ -289,6 +331,13 @@ class MyDevicePolicyService(private val context: Context) {
     // 4. Uninstall Apps
     fun blockUninstallApps() = enableRestriction(UserManager.DISALLOW_UNINSTALL_APPS)
     fun allowUninstallApps() = disableRestriction(UserManager.DISALLOW_UNINSTALL_APPS)
+
+    fun blockAdbDebugging() {
+        Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 0)
+    }
+    fun allowAdbDebugging() {
+        Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 1)
+    }
 
     // 5. Safe Boot (API 28+ only)
     fun blockSafeBoot() {

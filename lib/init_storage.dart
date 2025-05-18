@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:dom_affrikia_app/core/config/config.dart';
 import 'package:dom_affrikia_app/core/enums/phone-state.enum.dart';
 import 'package:dom_affrikia_app/injection_container.dart';
 import 'package:dom_affrikia_app/modules/customer/features/domain/entities/device.dart';
@@ -8,6 +9,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 Future<void> initStorage() async {
+  var phoneIMEI = sl<MainDataProvider>().deviceID;
+
+  await sl<FlutterSecureStorage>().write(key: "phoneIMEI", value: phoneIMEI);
   var hasActivation = await sl<FlutterSecureStorage>().containsKey(key: "isActivated");
   if (hasActivation) {
     var activation = await sl<FlutterSecureStorage>().read(key: "isActivated");
@@ -48,7 +52,7 @@ Future<void> initStorage() async {
   //create admin password if not exists
   var hasAdminPassword = await sl<FlutterSecureStorage>().containsKey(key: "adminPassword");
   if (!hasAdminPassword) {
-    await sl<FlutterSecureStorage>().write(key: "adminPassword", value: "1234");
+    await sl<FlutterSecureStorage>().write(key: "adminPassword", value: ADMIN_PASSWORD);
   }
 
   var activationCode = await sl<FlutterSecureStorage>().read(key: "customerCode");
