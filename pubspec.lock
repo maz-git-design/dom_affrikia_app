@@ -278,14 +278,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "9.1.1"
-  flutter_broadcasts_plus:
-    dependency: "direct main"
-    description:
-      name: flutter_broadcasts_plus
-      sha256: bd5f210b668f1dd821a45eb1fddcbc4b83b35389a7b7f5f1362b469ef4c5049b
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.4"
   flutter_device_imei:
     dependency: "direct main"
     description:

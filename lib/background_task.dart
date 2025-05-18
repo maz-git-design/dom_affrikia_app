@@ -11,7 +11,7 @@ import 'package:dom_affrikia_app/core/request/request_to_back_end_repo_call.dart
 import 'package:dom_affrikia_app/core/utils/helpers/customer.helper.dart';
 import 'package:dom_affrikia_app/modules/customer/features/domain/entities/bill.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_broadcasts_plus/flutter_broadcasts.dart';
+
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
@@ -69,7 +69,7 @@ void startCallback() {
 }
 
 class MyTaskHandler extends TaskHandler {
-  BroadcastReceiver? _apkReceiver;
+  //BroadcastReceiver? _apkReceiver;
   static const FlutterSecureStorage _secureStorage =
       FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
   static final InternetConnectionChecker internetConnectionChecker = InternetConnectionChecker.createInstance();
@@ -201,40 +201,40 @@ class MyTaskHandler extends TaskHandler {
     await intent.sendBroadcast();
   }
 
-  void startApkInstallReceiver() {
-    _apkReceiver = BroadcastReceiver(
-      names: [
-        'com.example.dom_affrikia_app.APK_DOWNLOAD_STARTED',
-        'com.example.dom_affrikia_app.APK_DOWNLOAD_PROGRESS',
-        'com.example.dom_affrikia_app.APK_DOWNLOAD_DONE',
-        'com.example.dom_affrikia_app.APK_DOWNLOAD_ERROR',
-      ],
-    );
+  // void startApkInstallReceiver() {
+  //   _apkReceiver = BroadcastReceiver(
+  //     names: [
+  //       'com.example.dom_affrikia_app.APK_DOWNLOAD_STARTED',
+  //       'com.example.dom_affrikia_app.APK_DOWNLOAD_PROGRESS',
+  //       'com.example.dom_affrikia_app.APK_DOWNLOAD_DONE',
+  //       'com.example.dom_affrikia_app.APK_DOWNLOAD_ERROR',
+  //     ],
+  //   );
 
-    _apkReceiver!.messages.listen((message) {
-      final action = message.name;
-      final data = message.data;
+  //   _apkReceiver!.messages.listen((message) {
+  //     final action = message.name;
+  //     final data = message.data;
 
-      if (action == 'com.example.dom_affrikia_app.APK_DOWNLOAD_PROGRESS') {
-        final progress = data?['progress'] ?? 0;
-        log('Download Progress: $progress%');
-      } else if (action == 'com.example.dom_affrikia_app.APK_DOWNLOAD_ERROR') {
-        final error = data?['error'] ?? 'Unknown error';
-        log('Installation Error: $error');
-        stopApkInstallReceiver();
-      } else if (action == 'com.example.dom_affrikia_app.APK_DOWNLOAD_DONE') {
-        log('Installation completed.');
-        stopApkInstallReceiver();
-      }
-    });
+  //     if (action == 'com.example.dom_affrikia_app.APK_DOWNLOAD_PROGRESS') {
+  //       final progress = data?['progress'] ?? 0;
+  //       log('Download Progress: $progress%');
+  //     } else if (action == 'com.example.dom_affrikia_app.APK_DOWNLOAD_ERROR') {
+  //       final error = data?['error'] ?? 'Unknown error';
+  //       log('Installation Error: $error');
+  //       stopApkInstallReceiver();
+  //     } else if (action == 'com.example.dom_affrikia_app.APK_DOWNLOAD_DONE') {
+  //       log('Installation completed.');
+  //       stopApkInstallReceiver();
+  //     }
+  //   });
 
-    _apkReceiver!.start();
-  }
+  //   _apkReceiver!.start();
+  // }
 
-  void stopApkInstallReceiver() {
-    _apkReceiver?.stop();
-    _apkReceiver = null;
-  }
+  // void stopApkInstallReceiver() {
+  //   _apkReceiver?.stop();
+  //   _apkReceiver = null;
+  // }
 
   // Called based on the eventAction set in ForegroundTaskOptions.
   @override

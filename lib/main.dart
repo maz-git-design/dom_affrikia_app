@@ -231,16 +231,13 @@
 //   }
 // }
 import 'dart:developer';
-import 'dart:ui';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:device_preview/device_preview.dart';
-import 'package:dom_affrikia_app/background_task.dart';
 import 'package:dom_affrikia_app/core/errors/bloc/error_bloc.dart';
 import 'package:dom_affrikia_app/core/ui/themes/app_themes.dart';
 import 'package:dom_affrikia_app/core/ui/themes/bloc/theme_bloc.dart';
 import 'package:dom_affrikia_app/get_imei.dart';
-import 'package:dom_affrikia_app/init_background_task.dart';
 import 'package:dom_affrikia_app/init_storage.dart';
 import 'package:dom_affrikia_app/modules/admin/features/presentation/bloc/admin/admin_bloc.dart';
 import 'package:dom_affrikia_app/modules/customer/features/presentation/bloc/activation_bloc.dart';
@@ -252,11 +249,9 @@ import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/p
 import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/pages/home_screen.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/pages/main_screen.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/providers/main_data_provider.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_device_imei/flutter_device_imei.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -289,8 +284,8 @@ Future<void> main() async {
 
   sl<MainDataProvider>().androidDeviceInfo = await sl<DeviceInfoPlugin>().androidInfo;
   await initImei();
-  PackageInfo packageInfo = await PackageInfo.fromPlatform();
-  log("App version: $packageInfo");
+  //PackageInfo packageInfo = await PackageInfo.fromPlatform();
+  //log("App version: $packageInfo");
 
   //sl<FlutterSecureStorage>().deleteAll();
   // init storage

@@ -10,7 +10,7 @@ import android.util.Log
 
 
 class AdminActionReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context?, intent: Intent?) {
+    override fun onReceive(context: Context, intent: Intent) {
         if (intent?.action == "com.example.dom_affrikia_app.ACTION_ADMIN") {
             val action = intent.getStringExtra("action")
             Log.d("AdminActionReceiver", "Received action: $action")
