@@ -1,0 +1,2 @@
+/Users/lionnelmazubaitetshi/Documents/dom_affrikia_app/android/app/.cxx/Debug/6xo28g1q/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/lionnelmazubaitetshi/Documents/dom_affrikia_app/android/app/.cxx/Debug/6xo28g1q/armeabi-v7a/CMakeFiles/rebuild_cache.dir
