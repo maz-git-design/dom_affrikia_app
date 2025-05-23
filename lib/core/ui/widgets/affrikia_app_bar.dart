@@ -1,9 +1,9 @@
 import 'package:dom_affrikia_app/injection_container.dart';
-import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/bloc/navigation/bloc/navigation_bloc.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/bloc/user/bloc/user_bloc.dart';
+import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/pages/about_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class AffrikiaAppBar extends StatelessWidget implements PreferredSizeWidget {
   final double height;
@@ -59,6 +59,29 @@ class AffrikiaAppBar extends StatelessWidget implements PreferredSizeWidget {
             //     Icon(Icons.person_outline_rounded),
             //   ],
             // )
+            SizedBox(
+              height: 20.sp,
+              child: IconButton(
+                style: IconButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 0),
+                  visualDensity: VisualDensity.compact,
+                  shape: const CircleBorder(),
+                  alignment: Alignment.center,
+                  backgroundColor: Theme.of(context).canvasColor,
+                  elevation: 8,
+                ),
+                splashRadius: 5,
+                onPressed: () {
+                  Navigator.of(context).pushNamed(AboutScreen.routeName);
+                },
+                icon: Icon(
+                  MdiIcons.informationVariant,
+                  color: Theme.of(context).primaryColor,
+                  size: 16.sp,
+                ),
+              ),
+            ),
+
             IconButton(
                 onPressed: () {
                   sl<UserBloc>().add(UserLoggedOut());

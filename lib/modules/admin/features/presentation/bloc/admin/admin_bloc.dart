@@ -153,6 +153,30 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
             emit(AdminError(message: message));
           }
           break;
+        case AdminConfigEnum.lockAdbFeatures:
+          try {
+            message =
+                await methodChannel.invokeMethod<String>(event.newState ? 'blockAdbFeatures' : 'allowAdbFeatures');
+            adminDataProvider.adminConfigs[event.optionIndex] =
+                adminDataProvider.adminConfigs[event.optionIndex].copyWith(state: event.newState);
+            emit(AdminConfigChanged(message: message ?? ""));
+          } catch (e) {
+            message = "Erreur ${e.toString()}";
+            emit(AdminError(message: message));
+          }
+          break;
+        case AdminConfigEnum.lockAppsControl:
+          try {
+            message =
+                await methodChannel.invokeMethod<String>(event.newState ? 'blockAppsControl' : 'allowAppsControl');
+            adminDataProvider.adminConfigs[event.optionIndex] =
+                adminDataProvider.adminConfigs[event.optionIndex].copyWith(state: event.newState);
+            emit(AdminConfigChanged(message: message ?? ""));
+          } catch (e) {
+            message = "Erreur ${e.toString()}";
+            emit(AdminError(message: message));
+          }
+          break;
         default:
           break;
       }
@@ -173,6 +197,8 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
         final addUserStatus = await methodChannel.invokeMethod<bool>('getAddUserStatus');
         final dateConfigStatus = await methodChannel.invokeMethod<bool>('getDateTimeStatus');
         final adbDebuggingStatus = await methodChannel.invokeMethod<bool>('getAdbDebuggingStatus');
+        final adbFeaturesStatus = await methodChannel.invokeMethod<bool>('getAdbFeaturesStatus');
+        final appsControlStatus = await methodChannel.invokeMethod<bool>('getAppsControlStatus');
 
         log("Admin status: $adminStatus");
         log("Kiosk status: $kioskStatus");
@@ -184,6 +210,8 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
         log("Tethering status: $tetheringStatus");
         log("Add user status: $addUserStatus");
         log("Date/heure configuration status: $dateConfigStatus");
+        log("Adb débuggage status: $adbDebuggingStatus");
+        log("Adb features status: $adbFeaturesStatus");
 
         adminDataProvider.adminConfigs = [
           AdminConfig(
@@ -254,14 +282,28 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
             config: AdminConfigEnum.lockDateConfig,
             state: dateConfigStatus!,
             methodName: "",
-            icon: MdiIcons.accountCancel,
+            icon: MdiIcons.calendarLock,
           ),
           AdminConfig(
             title: "Désactiver l'ADB",
             config: AdminConfigEnum.lockAdb,
             state: adbDebuggingStatus!,
             methodName: "",
-            icon: MdiIcons.debugStepInto,
+            icon: MdiIcons.usbFlashDrive,
+          ),
+          AdminConfig(
+            title: "Désactiver l'option dev.",
+            config: AdminConfigEnum.lockAdbFeatures,
+            state: adbFeaturesStatus!,
+            methodName: "",
+            icon: MdiIcons.developerBoard,
+          ),
+          AdminConfig(
+            title: "Désactiver apps. control",
+            config: AdminConfigEnum.lockAppsControl,
+            state: appsControlStatus!,
+            methodName: "",
+            icon: Icons.app_blocking_rounded,
           ),
         ];
         emit(AdminLoaded());

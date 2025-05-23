@@ -238,12 +238,14 @@ import 'package:dom_affrikia_app/core/errors/bloc/error_bloc.dart';
 import 'package:dom_affrikia_app/core/ui/themes/app_themes.dart';
 import 'package:dom_affrikia_app/core/ui/themes/bloc/theme_bloc.dart';
 import 'package:dom_affrikia_app/get_imei.dart';
+import 'package:dom_affrikia_app/init_download.dart';
 import 'package:dom_affrikia_app/init_storage.dart';
 import 'package:dom_affrikia_app/modules/admin/features/presentation/bloc/admin/admin_bloc.dart';
 import 'package:dom_affrikia_app/modules/customer/features/presentation/bloc/activation_bloc.dart';
 import 'package:dom_affrikia_app/modules/customer/features/presentation/bloc/customer/customer_bloc.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/bloc/navigation/bloc/navigation_bloc.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/bloc/user/bloc/user_bloc.dart';
+import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/pages/about_screen.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/pages/authenticated_screen.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/pages/contract_screen.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/pages/home_screen.dart';
@@ -290,6 +292,7 @@ Future<void> main() async {
   //sl<FlutterSecureStorage>().deleteAll();
   // init storage
   await initStorage();
+  await initDownload();
 
   //initBackgroundTask();
   FlutterForegroundTask.initCommunicationPort();
@@ -352,7 +355,7 @@ class MyApp extends StatelessWidget {
                   AuthenticatedScreen.routeName: (context) => const AuthenticatedScreen(),
                   MainScreen.routeName: (context) => const MainScreen(),
                   ContractScreen.routeName: (context) => const ContractScreen(),
-                  // AboutScreen.routeName: (context) => const AboutScreen(),
+                  AboutScreen.routeName: (context) => const AboutScreen(),
                   // EditProfileScreen.routeName: (context) => const EditProfileScreen(),
                 },
               ),

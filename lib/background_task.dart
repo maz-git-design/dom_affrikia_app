@@ -1,21 +1,27 @@
 // The callback function should always be a top-level or static function.
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
 import 'package:android_intent_plus/android_intent.dart';
+import 'package:background_downloader/background_downloader.dart';
 import 'package:dio/dio.dart';
 import 'package:dom_affrikia_app/core/config/config.dart';
+import 'package:dom_affrikia_app/core/entities/app_update_info.dart';
 import 'package:dom_affrikia_app/core/request/request_to_back_end.dart';
 import 'package:dom_affrikia_app/core/request/request_to_back_end_repo_call.dart';
 import 'package:dom_affrikia_app/core/utils/helpers/customer.helper.dart';
 import 'package:dom_affrikia_app/modules/customer/features/domain/entities/bill.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_broadcasts_plus/flutter_broadcasts.dart';
 
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:intl/intl.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path_provider/path_provider.dart';
 
 // void startMyBackgroundTask() async {
 //   var phoneState = await MyTaskHandler._secureStorage.read(key: "phoneState");
@@ -69,10 +75,12 @@ void startCallback() {
 }
 
 class MyTaskHandler extends TaskHandler {
-  //BroadcastReceiver? _apkReceiver;
+  StreamSubscription? _downloadSubscription;
+
   static const FlutterSecureStorage _secureStorage =
       FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
   static final InternetConnectionChecker internetConnectionChecker = InternetConnectionChecker.createInstance();
+  StreamSubscription<TaskUpdate>? downloadListener;
 
   static final Options options = Options(headers: {'Content-Type': 'application/json', 'deviceTypeId': '1'});
   static final Dio _dio = Dio(
@@ -102,9 +110,6 @@ class MyTaskHandler extends TaskHandler {
       var deviceId = await _secureStorage.read(key: "phoneIMEI");
       var status = getPhoneServerStatusFromStateString(phoneState);
       options.headers?["deviceId"] = deviceId;
-      log('sendStatus');
-      log("status: $status");
-      log("deviceId: $deviceId");
       final response = await remoteDataSourceCall<dynamic>(
         () => requestToBackend(
           () => _dio.put('/device/updateDeviceStatus?status=$status', options: options),
@@ -121,6 +126,50 @@ class MyTaskHandler extends TaskHandler {
             log("status data sent to server");
           } else {
             log("error sending data status");
+          }
+        },
+      );
+    }
+  }
+
+  Future<void> checkUpdate() async {
+    var updateStatus = await _secureStorage.read(key: "updateStatus");
+    if (updateStatus == null) {
+      await _secureStorage.write(key: "updateStatus", value: "NoUpdate");
+    }
+
+    var isConnected = await internetConnectionChecker.hasConnection;
+
+    if (isConnected && (updateStatus == "NoUpdate" || updateStatus == "UpdateInstalled")) {
+      PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      final response = await remoteDataSourceCall<dynamic>(
+        () => requestToBackend(
+          () => _dio.get('/common/getUpgradeInfo?version=${packageInfo.buildNumber}', options: options),
+          (json) => json,
+        ),
+        internetConnectionChecker.hasConnection,
+      );
+
+      response.fold(
+        (failure) => log(failure.toString(), name: "get package info"),
+        (json) async {
+          if (json['ok']) {
+            if (json['data'] != null) {
+              var upgradeInfo = AppUpdateInfo.fromJson(json['data']);
+
+              if (upgradeInfo.updateInstall == 1) {
+                await _secureStorage.write(key: "updateInfo", value: upgradeInfo.toString());
+                await _secureStorage.write(key: "updateStatus", value: "HasUpdate");
+                final Map<String, dynamic> data = {
+                  "updateStatus": "HasUpdate",
+                };
+                FlutterForegroundTask.sendDataToMain(data);
+              } else {
+                log("no force update available");
+              }
+            }
+          } else {
+            log("no update available");
           }
         },
       );
@@ -153,6 +202,7 @@ class MyTaskHandler extends TaskHandler {
           "phoneState": 0,
         };
         FlutterForegroundTask.sendDataToMain(data);
+        await changeNotificationStatus(0);
 
         // send overdue to server
         await sendStatustoServer();
@@ -187,54 +237,256 @@ class MyTaskHandler extends TaskHandler {
     }
   }
 
-  Future<void> updateApkHandler() async {
-    const intent = AndroidIntent(
-      action: 'com.example.dom_affrikia_app.ACTION_ADMIN',
-      package: 'com.example.dom_affrikia_app',
-      componentName: 'com.example.dom_affrikia_app.AdminActionReceiver',
-      arguments: {
-        'action': 'installApk',
-        'apkUrl': 'https://example.com/path/to/your.apk',
-      },
-    );
+  Future<void> changeNotificationStatus(int? newPhoneState) async {
+    if (newPhoneState != null && newPhoneState == 1) {
+      FlutterForegroundTask.updateService(
+        notificationTitle: 'Bienvenu chez afrikia',
+        notificationText:
+            "Votre téléphone est à l'état Activé partiellement. Payez toutes les factures pour une activation complète.",
+        // notificationButtons: [
+        //   const NotificationButton(id: 'btn_hello', text: 'OK'),
+        // ],
+        notificationIcon: const NotificationIcon(
+          metaDataName: 'com.example.dom_affrikia_app.AFRRIKIA_ICON',
+          backgroundColor: Color.fromRGBO(253, 172, 19, 1),
+        ),
+      );
+    } else if (newPhoneState != null && newPhoneState == 2) {
+      FlutterForegroundTask.updateService(
+        notificationTitle: 'Bienvenu chez afrikia',
+        notificationText:
+            "Bravo! Votre téléphone est à présent complètement activé. Vous pouvez l'utiliser avec toutes ses fonctionnalités",
+        // notificationButtons: [
+        //   const NotificationButton(id: 'btn_hello', text: 'OK'),
+        // ],
+        notificationIcon: const NotificationIcon(
+          metaDataName: 'com.example.dom_affrikia_app.AFRRIKIA_ICON',
+          backgroundColor: Color.fromRGBO(253, 172, 19, 1),
+        ),
+      );
 
-    await intent.sendBroadcast();
+      await Future.delayed(const Duration(hours: 1));
+      await stopService();
+    } else {
+      FlutterForegroundTask.updateService(
+        notificationTitle: 'Bienvenu chez afrikia',
+        notificationText: "Votre téléphone est à l'état Bloqué. Veuillez payer vos factures pour le débloquer.",
+        // notificationButtons: [
+        //   const NotificationButton(id: 'btn_hello', text: 'OK'),
+        // ],
+        notificationIcon: const NotificationIcon(
+          metaDataName: 'com.example.dom_affrikia_app.AFRRIKIA_ICON',
+          backgroundColor: Color.fromRGBO(253, 172, 19, 1),
+        ),
+      );
+    }
   }
 
-  // void startApkInstallReceiver() {
-  //   _apkReceiver = BroadcastReceiver(
-  //     names: [
-  //       'com.example.dom_affrikia_app.APK_DOWNLOAD_STARTED',
-  //       'com.example.dom_affrikia_app.APK_DOWNLOAD_PROGRESS',
-  //       'com.example.dom_affrikia_app.APK_DOWNLOAD_DONE',
-  //       'com.example.dom_affrikia_app.APK_DOWNLOAD_ERROR',
-  //     ],
-  //   );
+  Future<void> downloadHandler() async {
+    var updateStatus = await _secureStorage.read(key: "updateStatus");
+    if (updateStatus != null && updateStatus == "HasUpdate") {
+      var updateInfoString = await _secureStorage.read(key: "updateInfo");
+      var updateInfo = AppUpdateInfo.fromString(updateInfoString!);
+      FileDownloader().trackTasks(); //
+      _downloadSubscription?.cancel(); // cancel the previous download if any
+      _downloadSubscription = FileDownloader().updates.listen((update) async {
+        try {
+          switch (update) {
+            case TaskStatusUpdate():
+              // process the TaskStatusUpdate, e.g.
+              switch (update.status) {
+                case TaskStatus.complete:
+                  var filePath = await update.task.filePath();
+                  log('Task ${update.task.taskId} path: ${update.task.baseDirectory} $filePath');
+                  await _secureStorage.write(key: "lastApkFilePath", value: filePath);
+                  await _secureStorage.write(key: "updateStatus", value: "UpdateDownloaded");
+                  final Map<String, dynamic> data = {
+                    "updateStatus": "UpdateDownloaded",
+                  };
+                  FlutterForegroundTask.sendDataToMain(data);
+                  await sendApkToBroadcastReceiver(filePath);
 
-  //   _apkReceiver!.messages.listen((message) {
-  //     final action = message.name;
-  //     final data = message.data;
+                  var taskIds = await FileDownloader().allTaskIds();
+                  await FileDownloader().cancelTasksWithIds(taskIds);
+                  _downloadSubscription?.cancel();
+                  FileDownloader().destroy();
 
-  //     if (action == 'com.example.dom_affrikia_app.APK_DOWNLOAD_PROGRESS') {
-  //       final progress = data?['progress'] ?? 0;
-  //       log('Download Progress: $progress%');
-  //     } else if (action == 'com.example.dom_affrikia_app.APK_DOWNLOAD_ERROR') {
-  //       final error = data?['error'] ?? 'Unknown error';
-  //       log('Installation Error: $error');
-  //       stopApkInstallReceiver();
-  //     } else if (action == 'com.example.dom_affrikia_app.APK_DOWNLOAD_DONE') {
-  //       log('Installation completed.');
-  //       stopApkInstallReceiver();
-  //     }
-  //   });
+                  //startApkInstallReceiver();
+                  break;
+                case TaskStatus.paused:
+                  log('Download was paused');
+                  break;
+                case TaskStatus.running:
+                  // await _secureStorage.write(key: "updateStatus", value: "UpdateDownloading");
+                  // final Map<String, dynamic> data = {
+                  //   "updateStatus": "UpdateDownloading",
+                  // };
+                  // FlutterForegroundTask.sendDataToMain(data);
+                  log('Download is running');
+                  break;
+                case TaskStatus.enqueued:
+                  await _secureStorage.write(key: "updateStatus", value: "UpdateDownloading");
+                  final Map<String, dynamic> data = {
+                    "updateStatus": "UpdateDownloading",
+                  };
+                  FlutterForegroundTask.sendDataToMain(data);
+                  log('Download enqueued');
+                  break;
+                case TaskStatus.failed:
+                  await _secureStorage.write(key: "updateStatus", value: "HasUpdate");
+                  final Map<String, dynamic> data = {
+                    "updateStatus": "HasUpdate",
+                  };
+                  FlutterForegroundTask.sendDataToMain(data);
+                  log('Download failed');
+                  break;
+                case TaskStatus.canceled:
+                  await _secureStorage.write(key: "updateStatus", value: "HasUpdate");
+                  final Map<String, dynamic> data = {
+                    "updateStatus": "HasUpdate",
+                  };
+                  FlutterForegroundTask.sendDataToMain(data);
+                  log('Download canceled');
+                  break;
+                default:
+                  log('Status not configured ${update.status}');
+              }
 
-  //   _apkReceiver!.start();
-  // }
+            case TaskProgressUpdate():
+              // process the TaskProgressUpdate, e.g.
+              log("progress: ${update.progress}");
+              log("taskId ${update.task.taskId}");
+              FlutterForegroundTask.sendDataToMain({
+                "progress": update.progress,
+                "timeRemaining": update.timeRemainingAsString,
+                "hasTimeRemaining": update.hasTimeRemaining,
+                "hasExpectedSize": update.hasExpectedFileSize,
+                "expectedSize": update.expectedFileSize,
+              });
+          }
+        } catch (e, stack) {
+          log('Exception in update listener: $e\n$stack');
+          await _secureStorage.write(key: "updateStatus", value: "HasUpdate");
+          FlutterForegroundTask.sendDataToMain({
+            "updateStatus": "HasUpdate",
+            "error": e.toString(),
+          });
+        }
+      });
+      FileDownloader().start();
 
-  // void stopApkInstallReceiver() {
-  //   _apkReceiver?.stop();
-  //   _apkReceiver = null;
-  // }
+      var taskQueues = FileDownloader().taskQueues;
+      log('Task queues: $taskQueues');
+      if (taskQueues.isEmpty) {
+        final successfullyEnqueued = await FileDownloader().enqueue(
+          DownloadTask(
+            url: updateInfo.url!,
+            filename: updateInfo.title,
+            updates: Updates.statusAndProgress,
+            retries: 5,
+          ),
+        );
+        log('Download enqueued: $successfullyEnqueued');
+      }
+    } else if (updateStatus != null && updateStatus == "UpdateInstallError") {
+      var filePath = await _secureStorage.read(key: "lastApkFilePath");
+      final fileExist = await checkAfrrikiaApkExist(filePath!);
+
+      if (fileExist != null && fileExist) {
+        await sendApkToBroadcastReceiver(filePath);
+      } else {
+        await _secureStorage.write(key: "updateStatus", value: "NoUpdate");
+      }
+    }
+  }
+
+  Future<void> updateApkHandler() async {
+    var filePath = await _secureStorage.read(key: "lastApkFilePath");
+    if (filePath != null) {
+      var fileExist = await checkAfrrikiaApkExist(filePath);
+
+      if (fileExist != null && fileExist) {
+        var updateStatus = await _secureStorage.read(key: "updateStatus");
+        if (updateStatus != "UpdateInstallError") {
+          await deleteAfrrikiaApk(filePath);
+        }
+        return;
+      } else {
+        await downloadHandler();
+      }
+    } else {
+      await downloadHandler();
+    }
+  }
+
+  Future<void> deleteAfrrikiaApk(String filePath) async {
+    try {
+      // Get the app's documents directory
+      //final dir = await getApplicationDocumentsDirectory();
+
+      // Create a reference to the file
+      final file = File(filePath);
+
+      // Check if file exists
+      if (await file.exists()) {
+        await file.delete();
+        log('File deleted successfully.');
+      } else {
+        log('File does not exist.');
+      }
+    } catch (e) {
+      log('Error while deleting the file: $e');
+    }
+  }
+
+  Future<bool?> checkAfrrikiaApkExist(String filePath) async {
+    try {
+      final file = File(filePath);
+
+      // Check if file exists
+      if (await file.exists()) {
+        log('File deleted successfully.');
+        return true;
+      } else {
+        log('File does not exist.');
+        return false;
+      }
+    } catch (e) {
+      log('Error while deleting the file: $e');
+      return null;
+
+      //rethrow;
+    }
+  }
+
+  Future<void> sendApkToBroadcastReceiver(String filePath) async {
+    log('Sending APK path to BroadcastReceiver: $filePath');
+    final intent = AndroidIntent(
+      action: 'com.example.dom_affrikia_app.APK_INSTALL_TRIGGERED',
+      package: 'com.example.dom_affrikia_app',
+      componentName: 'com.example.dom_affrikia_app.ApkInstallReceiver',
+      arguments: {'apkPath': filePath},
+    );
+
+    try {
+      await intent.sendBroadcast();
+      log('✅ Broadcast sent with APK path');
+    } catch (e) {
+      log('❌ Failed to send broadcast: $e');
+    }
+  }
+
+  Future<void> checkAppOpenWhenPhoneBlock() async {
+    var appState = await FlutterForegroundTask.isAppOnForeground;
+    var phoneState = await _secureStorage.read(key: "phoneState");
+
+    log("Phone state: $phoneState");
+    log("App is on foreground: $appState");
+    if (!appState && (phoneState == null || phoneState == "0")) {
+      log("App is not on foreground and phone is blocked");
+      FlutterForegroundTask.launchApp();
+    }
+  }
 
   // Called based on the eventAction set in ForegroundTaskOptions.
   @override
@@ -243,15 +495,19 @@ class MyTaskHandler extends TaskHandler {
     final Map<String, dynamic> data = {
       "timestampMillis": timestamp.millisecondsSinceEpoch,
     };
-    //FlutterForegroundTask.sendDataToMain(data);
     log('onRepeatEvent(timestamp: $timestamp)');
 
-    // Update notifications
-    await updateNofification();
-    // Send status of device to server
-    await sendStatustoServer();
+    await checkAppOpenWhenPhoneBlock();
     // Check for overdue bills and block the phone if any are found
     await overDueHandler();
+    // Send status of device to server
+    await sendStatustoServer();
+    // Update notifications
+    await updateNofification();
+    // Check for new updates
+    await checkUpdate();
+    // Update APK if available
+    await updateApkHandler();
   }
 
   // Called when the task is destroyed.
@@ -267,36 +523,47 @@ class MyTaskHandler extends TaskHandler {
 
     // You can cast it to any type you want using the Collection.cast<T> function.
     if (data is Map<String, dynamic>) {
-      final dynamic newPhoneState = data["phoneState"];
-      if (newPhoneState != null && newPhoneState == 1) {
-        FlutterForegroundTask.updateService(
-          notificationTitle: 'Bienvenu chez afrikia',
-          notificationText:
-              "Votre téléphone est à l'état Activé partiellement. Payez toutes les factures pour une activation complète.",
-          // notificationButtons: [
-          //   const NotificationButton(id: 'btn_hello', text: 'OK'),
-          // ],
-          notificationIcon: const NotificationIcon(
-            metaDataName: 'com.example.dom_affrikia_app.AFRRIKIA_ICON',
-            backgroundColor: Color.fromRGBO(253, 172, 19, 1),
-          ),
-        );
-      } else if (newPhoneState != null && newPhoneState == 2) {
-        FlutterForegroundTask.updateService(
-          notificationTitle: 'Bienvenu chez afrikia',
-          notificationText:
-              "Bravo! Votre téléphone est à présent complètement activé. Vous pouvez l'utiliser avec toutes ses fonctionnalités",
-          // notificationButtons: [
-          //   const NotificationButton(id: 'btn_hello', text: 'OK'),
-          // ],
-          notificationIcon: const NotificationIcon(
-            metaDataName: 'com.example.dom_affrikia_app.AFRRIKIA_ICON',
-            backgroundColor: Color.fromRGBO(253, 172, 19, 1),
-          ),
-        );
+      if (data.containsKey("phoneState")) {
+        final dynamic newPhoneState = data["phoneState"];
+        changeNotificationStatus(newPhoneState);
+      } else if (data.containsKey('apk_event')) {
+        final event = data['apk_event'];
+        // log("data received from ForegroundService: $data");
+        // log('ForegroundService received event: $event');
+        if (event == "com.example.dom_affrikia_app.APK_INSTALL_STARTED") {
+          await _secureStorage.write(key: "updateStatus", value: "UpdateInstalling");
+          final Map<String, dynamic> dataToSend = {
+            "installStatus": data['status'],
+            "updateStatus": "UpdateInstalling",
+          };
+          FlutterForegroundTask.sendDataToMain(dataToSend);
+        }
+        if (event == "com.example.dom_affrikia_app.APK_INSTALL_PROGRESS") {
+          var progress = data['progress'] as num;
 
-        await Future.delayed(const Duration(hours: 1));
-        await stopService();
+          final Map<String, dynamic> dataToSend = {
+            "installProgress": progress,
+            "installStatus": data['status'],
+          };
+          FlutterForegroundTask.sendDataToMain(dataToSend);
+        } else if (event == "com.example.dom_affrikia_app.APK_INSTALL_DONE") {
+          final Map<String, dynamic> dataToSend = {
+            "installStatus": data['status'],
+            "updateStatus": "UpdateInstalled",
+          };
+          FlutterForegroundTask.sendDataToMain(dataToSend);
+          final String? filePath = await _secureStorage.read(key: "lastApkFilePath");
+          await deleteAfrrikiaApk(filePath!);
+          await _secureStorage.write(key: "updateStatus", value: "UpdateInstalled");
+        } else if (event == "com.example.dom_affrikia_app.APK_INSTALL_ERROR") {
+          log("APK installation error: ${data['error']}");
+          final Map<String, dynamic> dataToSend = {
+            "installStatus": data['status'],
+            "updateStatus": "UpdateInstalled",
+          };
+          FlutterForegroundTask.sendDataToMain(dataToSend);
+          await _secureStorage.write(key: "updateStatus", value: "UpdateInstallError");
+        }
       }
     }
   }

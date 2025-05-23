@@ -41,6 +41,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.0.4"
+  background_downloader:
+    dependency: "direct main"
+    description:
+      name: background_downloader
+      sha256: c3814aa0466368a4c1c32d24bc73ded752edacf06731ead43857a3ac992ed52d
+      url: "https://pub.dev"
+    source: hosted
+    version: "8.9.5"
   basic_utils:
     dependency: "direct main"
     description:
@@ -278,6 +286,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "9.1.1"
+  flutter_broadcasts_plus:
+    dependency: "direct main"
+    description:
+      name: flutter_broadcasts_plus
+      sha256: bd5f210b668f1dd821a45eb1fddcbc4b83b35389a7b7f5f1362b469ef4c5049b
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.4"
   flutter_device_imei:
     dependency: "direct main"
     description:
@@ -613,6 +629,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.16.0"
+  mime:
+    dependency: transitive
+    description:
+      name: mime
+      sha256: "41a20518f0cb1256669420fdba0cd90d21561e560ac240f26ef8322e45bb7ed6"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
   nested:
     dependency: transitive
     description:

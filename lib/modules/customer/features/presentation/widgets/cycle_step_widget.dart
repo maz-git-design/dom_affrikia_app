@@ -49,8 +49,9 @@ class _CycleStepWidgetState extends State<CycleStepWidget> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               SizedBox(height: _keyboardOpen ? size.height / 6 : size.height / 3.5),
-              const CircleAvatar(
-                child: Text("2"),
+              CircleAvatar(
+                backgroundColor: Theme.of(context).primaryColor,
+                child: const Text("2"),
               ),
               Text(
                 'Mode de paiement',
@@ -127,7 +128,18 @@ class _CycleStepWidgetState extends State<CycleStepWidget> {
                   );
                 }).toList(),
               ),
-
+              if (_billType == null)
+                const SizedBox(
+                  width: double.infinity,
+                  child: Text(
+                    "Le cycle est requis",
+                    textAlign: TextAlign.left,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
@@ -135,7 +147,7 @@ class _CycleStepWidgetState extends State<CycleStepWidget> {
                     sl<ActivationBloc>().add(ActivationGetBillType());
                   },
                   icon: const Icon(Icons.refresh),
-                  label: Text("Reactualiser les cycles"),
+                  label: const Text("Reactualiser les cycles"),
                   style: TextButton.styleFrom(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     alignment: Alignment.center,
@@ -174,6 +186,12 @@ class _CycleStepWidgetState extends State<CycleStepWidget> {
                   ),
                 ),
               ),
+              SizedBox(height: 5.h),
+              if (!sl<MainDataProvider>().hasConnection)
+                const Text(
+                  "Pas de connexion à internet",
+                  style: TextStyle(fontSize: 12),
+                ),
             ],
           ),
         ),

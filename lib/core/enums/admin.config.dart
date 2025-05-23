@@ -11,5 +11,7 @@ enum AdminConfigEnum {
   lockSafeBoot,
   lockDateConfig,
   lockAdb,
+  lockAdbFeatures,
+  lockAppsControl,
   lockInstall
 }

@@ -32,18 +32,6 @@ class AdminActionReceiver : BroadcastReceiver() {
 
                     Log.d("AdminActionReceiver", "MainActivity launched with kiosk action.")
                 }
-
-                "installApk" -> {
-                    val apkUrl = intent.getStringExtra("apkUrl")
-                    if (apkUrl.isNullOrEmpty()) {
-                        Log.e("AdminActionReceiver", "APK URL is missing for installApk action.")
-                        return
-                    }
-
-                    ApkDownloader.downloadAndInstallApk(context, apkUrl)
-                    Log.d("AdminActionReceiver", "Started APK download from URL: $apkUrl")
-                }
-
                 else -> {
                     Log.w("AdminActionReceiver", "Unknown action received: $action")
                 }

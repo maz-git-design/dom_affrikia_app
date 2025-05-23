@@ -10,6 +10,7 @@ import 'package:dom_affrikia_app/modules/customer/features/presentation/bloc/act
 import 'package:dom_affrikia_app/modules/customer/features/presentation/widgets/activation_step_widget.dart';
 import 'package:dom_affrikia_app/modules/customer/features/presentation/widgets/cycle_step_widget.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/bloc/navigation/bloc/navigation_bloc.dart';
+import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/pages/about_screen.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/providers/main_data_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,6 +18,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:keyboard_visibility_pro/keyboard_visibility_pro.dart';
 import 'package:loader_overlay/loader_overlay.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class CustomerActivation extends StatefulWidget with ValidatorMixin {
   const CustomerActivation({super.key});
@@ -284,6 +286,25 @@ class _CustomerActivationState extends State<CustomerActivation> {
                                   ),
                                 ),
                               ],
+                            ),
+                          ),
+                          IconButton.filled(
+                            style: IconButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 0),
+                              visualDensity: VisualDensity.compact,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              alignment: Alignment.center,
+                              backgroundColor: Theme.of(context).canvasColor,
+                              elevation: 8,
+                            ),
+                            splashRadius: 10,
+                            onPressed: () {
+                              Navigator.of(context).pushNamed(AboutScreen.routeName);
+                            },
+                            icon: Icon(
+                              MdiIcons.informationVariant,
+                              color: Theme.of(context).primaryColor,
+                              size: 18.sp,
                             ),
                           ),
                         ],

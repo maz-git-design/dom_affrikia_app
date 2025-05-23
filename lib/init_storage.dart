@@ -12,6 +12,7 @@ Future<void> initStorage() async {
   var phoneIMEI = sl<MainDataProvider>().deviceID;
 
   await sl<FlutterSecureStorage>().write(key: "phoneIMEI", value: phoneIMEI);
+
   var hasActivation = await sl<FlutterSecureStorage>().containsKey(key: "isActivated");
   if (hasActivation) {
     var activation = await sl<FlutterSecureStorage>().read(key: "isActivated");

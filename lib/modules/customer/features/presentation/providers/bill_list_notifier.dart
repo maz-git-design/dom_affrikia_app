@@ -67,10 +67,10 @@ class BillListNotifier extends ChangeNotifier {
       mainDataProvider.phoneState = PhoneStateEnum.lock;
       await secureStorage.write(key: "phoneState", value: PhoneStateEnum.lock.index.toString());
       await secureStorage.write(key: "hasDataToSend", value: "1");
-      // final Map<String, dynamic> data = {
-      //   "phoneState": 0,
-      // };
-      // FlutterForegroundTask.sendDataToTask(data);
+      final Map<String, dynamic> data = {
+        "phoneState": 0,
+      };
+      FlutterForegroundTask.sendDataToTask(data);
       await enableKioskMode();
       log("phone locked for overdue");
     } else if (paidAllBill()) {

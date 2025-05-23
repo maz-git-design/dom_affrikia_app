@@ -5,6 +5,7 @@ import 'package:dom_affrikia_app/injection_container.dart';
 import 'package:dom_affrikia_app/modules/admin/features/presentation/bloc/admin/admin_bloc.dart';
 import 'package:dom_affrikia_app/modules/customer/features/presentation/bloc/customer/customer_bloc.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/bloc/navigation/bloc/navigation_bloc.dart';
+import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/pages/about_screen.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/providers/main_data_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,6 +13,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:keyboard_visibility_pro/keyboard_visibility_pro.dart';
 import 'package:loader_overlay/loader_overlay.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class CustomerAuthView extends StatefulWidget {
   const CustomerAuthView({super.key});
@@ -158,6 +160,30 @@ class _CustomerAuthViewState extends State<CustomerAuthView> {
                                   });
                                 },
                               ),
+                              if (code.isEmpty)
+                                const SizedBox(
+                                  width: double.infinity,
+                                  child: Text(
+                                    "Le code est requis",
+                                    textAlign: TextAlign.left,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                ),
+                              if (code.isNotEmpty && code.length < 3)
+                                const SizedBox(
+                                  width: double.infinity,
+                                  child: Text(
+                                    "Le code doit avoir au moins 3 caractères",
+                                    textAlign: TextAlign.left,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                ),
                               const SizedBox(height: 20.0),
                             ],
                           ),
@@ -233,8 +259,39 @@ class _CustomerAuthViewState extends State<CustomerAuthView> {
                     height: 150.h,
                     width: double.infinity,
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: <Widget>[
+                        if (!_keyboardOpen)
+                          Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Row(
+                              children: <Widget>[
+                                const Spacer(),
+                                SizedBox(
+                                  height: 20.sp,
+                                  child: IconButton(
+                                    style: IconButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(horizontal: 0),
+                                      visualDensity: VisualDensity.compact,
+                                      shape: const CircleBorder(),
+                                      alignment: Alignment.center,
+                                      backgroundColor: Theme.of(context).canvasColor,
+                                      elevation: 8,
+                                    ),
+                                    splashRadius: 5,
+                                    onPressed: () {
+                                      Navigator.of(context).pushNamed(AboutScreen.routeName);
+                                    },
+                                    icon: Icon(
+                                      MdiIcons.informationVariant,
+                                      color: Theme.of(context).primaryColor,
+                                      size: 16.sp,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         GestureDetector(
                           onTap: _handleSecretTap,
                           child: Image.asset(

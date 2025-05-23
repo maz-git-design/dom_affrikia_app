@@ -13,6 +13,7 @@ class ContractScreen extends StatelessWidget {
         title: const Text('Accord de Financement'),
       ),
       body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -8,139 +8,117 @@ import android.util.Log
 import android.content.pm.PackageInstaller
 import java.io.*
 import java.net.URL
+import javax.net.ssl.HttpsURLConnection
+import java.net.HttpURLConnection
+import android.app.AlarmManager
 
 class ApkDownloader {
     companion object {
-        fun downloadAndInstallApk(context: Context, apkUrl: String) {
+
+        fun installApk(context: Context, apkFile: File) {
             Thread {
                 try {
-                    sendDownloadStartBroadcast(context)
+                    sendInstallStartBroadcast(context)
+                    //sendInstallProgressBroadcast(context, 5)
 
-                    val apkFile = File(context.cacheDir, "update.apk")
-                    val urlConnection = URL(apkUrl).openConnection()
-                    val totalSize = urlConnection.contentLength
-                    val input = urlConnection.getInputStream()
-                    val output = FileOutputStream(apkFile)
+                    val packageInstaller = context.packageManager.packageInstaller
+                    val input = FileInputStream(apkFile)
+
+                    val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
+                    val sessionId = packageInstaller.createSession(params)
+                    val session = packageInstaller.openSession(sessionId)
+                    val out = session.openWrite("app_update", 0, -1)
 
                     val buffer = ByteArray(8 * 1024)
-                    var bytesRead: Int
-                    var downloadedSize = 0
-                    var lastProgress = 0
+                    var c: Int
+                    var writtenBytes = 0L
+                    val totalBytes = apkFile.length()
 
-                    while (input.read(buffer).also { bytesRead = it } != -1) {
-                        output.write(buffer, 0, bytesRead)
-                        downloadedSize += bytesRead
+                    var lastProgress = -1
 
-                        val progress = (downloadedSize * 100) / totalSize
-                        if (progress != lastProgress) {
-                            sendDownloadProgressBroadcast(context, progress)
+                    while (input.read(buffer).also { c = it } != -1) {
+                        out.write(buffer, 0, c)
+                        writtenBytes += c
+
+                        val progress = (writtenBytes * 100 / totalBytes).toInt()
+                        if (progress % 2 == 0 && progress != lastProgress) {
                             lastProgress = progress
+                            sendInstallProgressBroadcast(context, progress)
                         }
                     }
 
-                    output.flush()
-                    output.close()
+                    session.fsync(out)
                     input.close()
-                    
-                    sendDownloadDoneBroadcast(context)
-                    installApk(context, apkFile)
+                    out.close()
+
+                    sendInstallProgressBroadcast(context, 100)
+                    sendInstallDoneBroadcast(context)
+
+                    // Delay before committing the session
+                    Thread.sleep(8000) // Delay for 5 seconds
+
+                    val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+                    val pendingRestart = PendingIntent.getActivity(
+                        context,
+                        0,
+                        launchIntent,
+                        PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+
+                    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                    alarmManager.set(
+                        AlarmManager.RTC,
+                        System.currentTimeMillis() + 5000, // 5 seconds later
+                        pendingRestart
+                    )
+
+                    val intent = Intent(context, ApkInstallReceiver::class.java)
+                    val pendingIntent = PendingIntent.getBroadcast(
+                        context,
+                        sessionId,
+                        intent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
+                    )
+
+                    session.commit(pendingIntent.intentSender)
+                    session.close()
 
                 } catch (e: Exception) {
-                    Log.e("ApkDownloader", "Download error", e)
-                    sendDownloadErrorBroadcast(context, e.message ?: "Unknown download error")
+                    Log.e("ApkDownloader", "Install error", e)
+                    sendInstallErrorBroadcast(context, e.message ?: "Unknown install error")
                 }
             }.start()
         }
 
-        private fun installApk(context: Context, apkFile: File) {
-            try {
-                sendInstallStartBroadcast(context)
-                sendInstallProgressBroadcast(context, 5) // Simulate progress starting
-
-                val packageInstaller = context.packageManager.packageInstaller
-                val input = FileInputStream(apkFile)
-
-                val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
-                val sessionId = packageInstaller.createSession(params)
-                val session = packageInstaller.openSession(sessionId)
-                val out = session.openWrite("app_update", 0, -1)
-
-                val buffer = ByteArray(8 * 1024)
-                var c: Int
-                var writtenBytes = 0L
-                val totalBytes = apkFile.length()
-
-                while (input.read(buffer).also { c = it } != -1) {
-                    out.write(buffer, 0, c)
-                    writtenBytes += c
-
-                    val progress = (writtenBytes * 100 / totalBytes).toInt()
-                    sendInstallProgressBroadcast(context, progress.coerceIn(0, 100))
-                }
-
-                session.fsync(out)
-                input.close()
-                out.close()
-
-                sendInstallProgressBroadcast(context, 100)
-                sendInstallDoneBroadcast(context)
-
-                val intent = Intent(context, ApkInstallReceiver::class.java)
-                val pendingIntent = PendingIntent.getBroadcast(
-                    context,
-                    sessionId,
-                    intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
-                )
-
-                session.commit(pendingIntent.intentSender)
-                session.close()
-
-            } catch (e: Exception) {
-                Log.e("ApkDownloader", "Install error", e)
-                sendInstallErrorBroadcast(context, e.message ?: "Unknown install error")
-            }
-        }
-
-        // --- Download status broadcasts ---
-        private fun sendDownloadStartBroadcast(context: Context) {
-            context.sendBroadcast(Intent("com.example.dom_affrikia_app.APK_DOWNLOAD_STARTED"))
-        }
-
-        private fun sendDownloadProgressBroadcast(context: Context, progress: Int) {
-            val intent = Intent("com.example.dom_affrikia_app.APK_DOWNLOAD_PROGRESS")
-            intent.putExtra("progress", progress)
-            context.sendBroadcast(intent)
-        }
-
-        private fun sendDownloadDoneBroadcast(context: Context) {
-            val intent = Intent("com.example.dom_affrikia_app.APK_DOWNLOAD_DONE")
-            context.sendBroadcast(intent)
-        }
-
-        private fun sendDownloadErrorBroadcast(context: Context, message: String) {
-            val intent = Intent("com.example.dom_affrikia_app.APK_DOWNLOAD_ERROR")
-            intent.putExtra("error", message)
-            context.sendBroadcast(intent)
-        }
-
         // --- Install status broadcasts ---
         private fun sendInstallStartBroadcast(context: Context) {
-            context.sendBroadcast(Intent("com.example.dom_affrikia_app.APK_INSTALL_STARTED"))
+            Log.d("ApkDownloader", "APK installation started")
+            val intent = Intent("com.example.dom_affrikia_app.APK_INSTALL_STARTED")
+            intent.setClass(context, ApkInstallReceiver::class.java)
+            context.sendBroadcast(intent)
         }
 
         private fun sendInstallProgressBroadcast(context: Context, progress: Int) {
+            Log.d("ApkDownloader", "Progress install inside: $progress")
+
             val intent = Intent("com.example.dom_affrikia_app.APK_INSTALL_PROGRESS")
+            intent.setClass(context, ApkInstallReceiver::class.java)
             intent.putExtra("progress", progress)
             context.sendBroadcast(intent)
         }
 
-        fun sendInstallDoneBroadcast(context: Context) {
-            context.sendBroadcast(Intent("com.example.dom_affrikia_app.APK_INSTALL_DONE"))
+        private fun sendInstallDoneBroadcast(context: Context) {
+            Log.d("ApkDownloader", "APK installation done")
+            val intent = Intent("com.example.dom_affrikia_app.APK_INSTALL_DONE")
+            intent.setClass(context, ApkInstallReceiver::class.java)
+            context.sendBroadcast(intent)
         }
 
-        fun sendInstallErrorBroadcast(context: Context, message: String) {
+        private fun sendInstallErrorBroadcast(context: Context, message: String) {
+            Log.e("ApkDownloader", "APK installation error: $message")
+
             val intent = Intent("com.example.dom_affrikia_app.APK_INSTALL_ERROR")
+            intent.setClass(context, ApkInstallReceiver::class.java)
             intent.putExtra("error", message)
             context.sendBroadcast(intent)
         }

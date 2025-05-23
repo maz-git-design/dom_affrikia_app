@@ -1,0 +1,2 @@
+/Users/lionnelmazuba/Documents/GitHub/dom_affrikia_app/android/app/.cxx/RelWithDebInfo/4041432t/x86/CMakeFiles/edit_cache.dir
+/Users/lionnelmazuba/Documents/GitHub/dom_affrikia_app/android/app/.cxx/RelWithDebInfo/4041432t/x86/CMakeFiles/rebuild_cache.dir

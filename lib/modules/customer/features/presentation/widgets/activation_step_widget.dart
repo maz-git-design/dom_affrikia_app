@@ -43,8 +43,9 @@ class _ActivationStepWidgetState extends State<ActivationStepWidget> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               SizedBox(height: _keyboardOpen ? size.height / 6 : size.height / 3.5),
-              const CircleAvatar(
-                child: Text("1"),
+              CircleAvatar(
+                backgroundColor: Theme.of(context).primaryColor,
+                child: const Text("1"),
               ),
               Text(
                 'Activation',
@@ -88,6 +89,31 @@ class _ActivationStepWidgetState extends State<ActivationStepWidget> {
                   });
                 },
               ),
+
+              if (code.isEmpty)
+                const SizedBox(
+                  width: double.infinity,
+                  child: Text(
+                    "Le code est requis",
+                    textAlign: TextAlign.left,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+              if (code.isNotEmpty && code.length < 3)
+                const SizedBox(
+                  width: double.infinity,
+                  child: Text(
+                    "Le code doit avoir au moins 3 caractères",
+                    textAlign: TextAlign.left,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
               const SizedBox(height: 10.0),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -95,6 +121,7 @@ class _ActivationStepWidgetState extends State<ActivationStepWidget> {
                   children: <Widget>[
                     Checkbox(
                         splashRadius: 8.r,
+                        activeColor: Theme.of(context).primaryColor,
                         value: _isRead,
                         onChanged: (value) {
                           setState(() {
@@ -161,6 +188,12 @@ class _ActivationStepWidgetState extends State<ActivationStepWidget> {
                   ),
                 ),
               ),
+              SizedBox(height: 5.h),
+              if (!sl<MainDataProvider>().hasConnection)
+                const Text(
+                  "Pas de connexion à internet",
+                  style: TextStyle(fontSize: 12),
+                ),
             ],
           ),
         ),

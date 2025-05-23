@@ -28,6 +28,8 @@ class MainActivity : FlutterActivity() {
         super.onCreate(savedInstanceState)
         policyService = MyDevicePolicyService(this)
 
+        policyService.applyPermissionPolicyAndGrants()
+
             // 👇 Handle intent action from BroadcastReceiver
         val action = intent?.getStringExtra("action")
         if (action == "enableKioskMode") {
@@ -129,6 +131,8 @@ class MainActivity : FlutterActivity() {
                 "getAddUserStatus" -> result.success(policyService.isAddUserBlocked())
                 "getDateTimeStatus" -> result.success(policyService.isModifyingDateBlocked())
                 "getAdbDebuggingStatus" -> result.success(policyService.isAdbDebuggingBlocked())
+                "getAdbFeaturesStatus" -> result.success(policyService.isAdbFeaturesBlocked())
+                "getAppsControlStatus" -> result.success(policyService.isAppsControlBlocked())
                 "exitKioskMode" -> {
                     policyService.exitKioskMode()
                     result.success("Exited Kiosk Mode")
@@ -204,6 +208,22 @@ class MainActivity : FlutterActivity() {
                 "allowAdbDebugging" -> {
                     policyService.allowAdbDebugging()
                     result.success("Adb debugging allowed")
+                }
+                "blockAdbFeatures" -> {
+                    policyService.blockAdbFeatures()
+                    result.success("Adb features blocked")
+                }
+                "allowAdbFeatures" -> {
+                    policyService.allowAdbFeatures()
+                    result.success("Adb features allowed")
+                }
+                 "blockAppsControl" -> {
+                    policyService.blockAppsControl()
+                    result.success("Apps control blocked")
+                }
+                "allowAppsControl" -> {
+                    policyService.allowAppsControl()
+                    result.success("Apps control allowed")
                 }
                 else -> result.notImplemented()
             }

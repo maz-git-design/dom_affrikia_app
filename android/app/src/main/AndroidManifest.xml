@@ -33,6 +33,7 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
 
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <!-- required -->
     <!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE" /> -->
@@ -120,14 +121,12 @@
 
             
             <intent-filter>
+                <action android:name="com.example.dom_affrikia_app.APK_INSTALL_TRIGGERED"/>
                 <action android:name="com.example.dom_affrikia_app.APK_INSTALL_STARTED"/>
                 <action android:name="com.example.dom_affrikia_app.APK_INSTALL_PROGRESS"/>
                 <action android:name="com.example.dom_affrikia_app.APK_INSTALL_DONE"/>
                 <action android:name="com.example.dom_affrikia_app.APK_INSTALL_ERROR"/>
-                <action android:name="com.example.dom_affrikia_app.APK_DOWNLOAD_STARTED"/>
-                <action android:name="com.example.dom_affrikia_app.APK_DOWNLOAD_PROGRESS"/>
-                <action android:name="com.example.dom_affrikia_app.APK_DOWNLOAD_DONE"/>
-                <action android:name="com.example.dom_affrikia_app.APK_DOWNLOAD_ERROR"/>
+                <action android:name="com.example.dom_affrikia_app.APK_ACTION_TEST"/>
             </intent-filter>
         </receiver>
 

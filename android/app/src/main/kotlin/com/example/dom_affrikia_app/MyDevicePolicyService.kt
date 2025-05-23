@@ -18,6 +18,7 @@ import android.util.Log
 import androidx.core.app.ActivityCompat
 
 
+
 class MyDevicePolicyService(private val context: Context) {
  
     
@@ -29,6 +30,38 @@ class MyDevicePolicyService(private val context: Context) {
     private fun isDebug(): Boolean {
         return context.applicationInfo.flags and
                 android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0
+    }
+
+    fun applyPermissionPolicyAndGrants() {
+
+        if (!dpm.isAdminActive(adminComponent)) return
+        // Automatically grant runtime permissions
+        dpm.setPermissionPolicy(adminComponent, DevicePolicyManager.PERMISSION_POLICY_AUTO_GRANT)
+
+        val permissions = listOf(
+            Manifest.permission.CAMERA,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.READ_PHONE_STATE,
+            Manifest.permission.PACKAGE_USAGE_STATS,
+            Manifest.permission.SYSTEM_ALERT_WINDOW,
+            Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+            Manifest.permission.ACCESS_NOTIFICATION_POLICY,
+            Manifest.permission.POST_NOTIFICATIONS
+            // Add others if needed and if runtime-grantable
+        )
+
+        permissions.forEach { permission ->
+            try {
+                dpm.setPermissionGrantState(
+                    adminComponent,
+                    context.packageName,
+                    permission,
+                    DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED
+                )
+            } catch (e: SecurityException) {
+                Log.w("DPC", "Could not grant permission: $permission. ${e.message}")
+            }
+        }
     }
 
     fun getIMEI(): String? {
@@ -58,7 +91,9 @@ class MyDevicePolicyService(private val context: Context) {
             UserManager.DISALLOW_SAFE_BOOT,
             UserManager.DISALLOW_CONFIG_TETHERING,
             UserManager.DISALLOW_ADD_USER,
-            UserManager.DISALLOW_CONFIG_DATE_TIME
+            UserManager.DISALLOW_CONFIG_DATE_TIME,
+            UserManager.DISALLOW_DEBUGGING_FEATURES,
+            UserManager.DISALLOW_APPS_CONTROL
         )
     
         for (restriction in restrictions) {
@@ -231,6 +266,16 @@ class MyDevicePolicyService(private val context: Context) {
         return Settings.Global.getInt(context.contentResolver, Settings.Global.ADB_ENABLED, 0) == 0
     }
 
+     fun isAdbFeaturesBlocked(): Boolean {
+        return dpm.getUserRestrictions(adminComponent)
+            .getBoolean(UserManager.DISALLOW_DEBUGGING_FEATURES, false)
+    }
+    
+    fun isAppsControlBlocked(): Boolean {
+        return dpm.getUserRestrictions(adminComponent)
+            .getBoolean(UserManager.DISALLOW_APPS_CONTROL, false)
+    }
+
     // Generic methods
     private fun enableRestriction(restriction: String) {
         if (dpm.isAdminActive(adminComponent)) {
@@ -363,4 +408,11 @@ class MyDevicePolicyService(private val context: Context) {
     // 7. Add User
     fun blockAddUser() = enableRestriction(UserManager.DISALLOW_ADD_USER)
     fun allowAddUser() = disableRestriction(UserManager.DISALLOW_ADD_USER)
+    fun blockAdbFeatures() = enableRestriction(UserManager.DISALLOW_DEBUGGING_FEATURES)
+    fun allowAdbFeatures() = disableRestriction(UserManager.DISALLOW_DEBUGGING_FEATURES)
+    fun blockAppsControl() = enableRestriction(UserManager.DISALLOW_APPS_CONTROL)
+    fun allowAppsControl() = disableRestriction(UserManager.DISALLOW_APPS_CONTROL)
+
+
+    
 }
