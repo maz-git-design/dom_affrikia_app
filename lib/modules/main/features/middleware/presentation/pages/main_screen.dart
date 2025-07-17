@@ -1,20 +1,14 @@
-import 'dart:developer';
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:dom_affrikia_app/background_task.dart';
 import 'package:dom_affrikia_app/core/enums/phone-state.enum.dart';
 import 'package:dom_affrikia_app/injection_container.dart';
-
 import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/pages/authenticated_screen.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/pages/home_screen.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/providers/main_data_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import 'package:flutter_foreground_task/models/foreground_task_event_action.dart';
-import 'package:flutter_foreground_task/models/foreground_task_options.dart';
-import 'package:flutter_foreground_task/models/notification_options.dart';
 
 import '../bloc/user/bloc/user_bloc.dart';
 

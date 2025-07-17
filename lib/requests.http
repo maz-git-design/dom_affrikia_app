@@ -10,11 +10,12 @@ Content-Type: application/json
   "address": "string",
   "status": "pending",
   "role": "customer",
-  "otp": "string"
+  "otp": "string",
+  "clerkId": "15985907323"
 }
 
 #### Activate Device with bill generation (Using Activation Code)
-POST http://localhost:7001/device/activate?code=A00QW6&deviceType=1
+POST http://localhost:7001/device/activate?code=A00QWL&deviceType=1
 Content-Type: application/json
 deviceId: 2536278193U2
 deviceTypeId: 1
@@ -34,7 +35,7 @@ deviceId: 2536278193U2
 ### Ask Activation code
 
 ### Get Bill
-GET http://localhost:7001/bill/getBillsByCustomer?customerPhone=243892007341
+GET http://localhost:7001/bill/getBillsByCustomer?customerPhone=243892007343
 Content-Type: application/json
 
 ### Get bill types
@@ -42,7 +43,7 @@ GET http://localhost:7001/bill/getBillTypes
 Content-Type: application/json
 
 ### Create Bills
-PUT http://localhost:7001/bill/createBills?typeCode=month
+PUT http://localhost:7001/bill/createBills?typeCode=week
 Content-Type: application/json
 deviceId: 2536278193U2
 
@@ -79,9 +80,14 @@ Content-Type: application/json
     "typeName": "Phone",
     "typeModel": "Android",
     "typePrice": 2300.7,
-    "typeActivationFee": 200,
+    "typeActivationFee": 200
 }
 
 ### Get device typ list
-GET http://localhost:7001/api/devicetype/list
+GET http://localhost:7001/device-type/list
+Content-Type: application/json
+
+
+###
+GET http://localhost:3000/oauth/check_token
 Content-Type: application/json

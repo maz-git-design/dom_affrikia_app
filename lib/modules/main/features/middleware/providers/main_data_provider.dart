@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert'; // Add this import for JSON encoding
-import 'dart:developer';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';

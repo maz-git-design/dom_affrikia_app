@@ -1,10 +1,7 @@
-import 'package:dom_affrikia_app/core/enums/cycle.enum.dart';
 import 'package:dom_affrikia_app/core/ui/others/textfield_widget.dart';
 import 'package:dom_affrikia_app/core/ui/widgets/dialog_box.dart';
 import 'package:dom_affrikia_app/injection_container.dart';
-import 'package:dom_affrikia_app/modules/customer/features/domain/entities/cycle.dart';
 import 'package:dom_affrikia_app/modules/customer/features/presentation/bloc/activation_bloc.dart';
-import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/bloc/user/bloc/user_bloc.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/pages/contract_screen.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/providers/main_data_provider.dart';
 import 'package:flutter/material.dart';

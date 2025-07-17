@@ -19,7 +19,7 @@ class Customer {
   final String? birth;
   final String? momoAccount;
   final String? activeCode;
-  final int? clerkId;
+  final String? clerkId;
   final String? clerkName;
   final String? pic;
   final String? faceIdCardPic;
@@ -71,7 +71,7 @@ class Customer {
       birth: json['birth'] as String?,
       momoAccount: json['momoAccount'] as String?,
       activeCode: json['activeCode'] as String?,
-      clerkId: json['clerkId'] as int?,
+      clerkId: json['clerkId'] as String?,
       clerkName: json['clerkName'] as String?,
       pic: json['pic'] as String?,
       faceIdCardPic: json['faceIdCardPic'] as String?,

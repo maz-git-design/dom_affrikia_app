@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:bloc/bloc.dart';
 import 'package:dio/dio.dart';
@@ -41,7 +42,8 @@ class CustomerBloc extends Bloc<CustomerEvent, CustomerState> {
       emit(CustomerLoading());
 
       var custmerInfo = await secureStorage.read(key: "customerInfo");
-      if (custmerInfo != null) {
+      if (custmerInfo != null && custmerInfo != "null") {
+        log("cusstomerInfo: $custmerInfo");
         mainDataProvider.customerInfo = Customer.fromString(custmerInfo);
         emit(CustomerInfoLoaded());
       } else {

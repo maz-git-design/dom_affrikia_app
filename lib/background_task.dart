@@ -14,14 +14,11 @@ import 'package:dom_affrikia_app/core/request/request_to_back_end_repo_call.dart
 import 'package:dom_affrikia_app/core/utils/helpers/customer.helper.dart';
 import 'package:dom_affrikia_app/modules/customer/features/domain/entities/bill.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_broadcasts_plus/flutter_broadcasts.dart';
-
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:path_provider/path_provider.dart';
 
 // void startMyBackgroundTask() async {
 //   var phoneState = await MyTaskHandler._secureStorage.read(key: "phoneState");

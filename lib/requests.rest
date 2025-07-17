@@ -12,8 +12,17 @@ Content-Type: application/json
   "address": "string",
   "status": "pending",
   "role": "customer",
-  "otp": "string"
+  "otp": "string",
+  "clerkId": "224669009538"
 }
+
+### Get All clerks
+GET https://afrrikia.com/api/common/getAllClerks
+Content-Type: application/json
+
+### Get clerk by phone
+GET https://afrrikia.com/api/common/getClerkInfo?clerkPhone=1598590732
+Content-Type: application/json
 
 #### Activate Device with bill generation (Using Activation Code)
 POST https://afrrikia.com/api/device/activate?code=A00QEW&deviceType=1
@@ -55,9 +64,9 @@ GET https://afrrikia.com/api/bill/getBillTypes
 Content-Type: application/json
 
 ### Create Bills
-PUT https://afrrikia.com/api/bill/createBills?typeCode=month
+PUT https://afrrikia.com/api/bill/createBills?typeCode=week
 Content-Type: application/json
-deviceId: 2536278193U2
+deviceId: 9ABEDAE483E0FCAF
 
 {}
 
@@ -101,7 +110,7 @@ Content-Type: application/json
 }
 
 ### Get device typ list
-GET http://afrrikia.com/api/api/devicetype/list
+GET https://afrrikia.com/api/device-type/list
 Content-Type: application/json
 
 
