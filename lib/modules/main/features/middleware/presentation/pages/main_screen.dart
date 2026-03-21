@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dom_affrikia_app/background_task.dart';
 import 'package:dom_affrikia_app/core/enums/phone-state.enum.dart';
+import 'package:dom_affrikia_app/init_background_task.dart';
 import 'package:dom_affrikia_app/injection_container.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/pages/authenticated_screen.dart';
 import 'package:dom_affrikia_app/modules/main/features/middleware/presentation/pages/home_screen.dart';
@@ -9,6 +10,7 @@ import 'package:dom_affrikia_app/modules/main/features/middleware/providers/main
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../bloc/user/bloc/user_bloc.dart';
 
@@ -21,6 +23,11 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
+  static const String _kMainServiceEnabledFlag = 'mainServiceEnabledFlag';
+
   void _onReceiveTaskData(Object data) {
     if (data is Map<String, dynamic>) {
       final dynamic newPhoneState = data["phoneState"];
@@ -34,7 +41,8 @@ class _MainScreenState extends State<MainScreen> {
     // Android 13+, you need to allow notification permission to display foreground service notification.
     //
     // iOS: If you need notification, ask for permission.
-    final NotificationPermission notificationPermission = await FlutterForegroundTask.checkNotificationPermission();
+    final NotificationPermission notificationPermission =
+        await FlutterForegroundTask.checkNotificationPermission();
     if (notificationPermission != NotificationPermission.granted) {
       await FlutterForegroundTask.requestNotificationPermission();
     }
@@ -61,28 +69,6 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  void _initService() {
-    FlutterForegroundTask.init(
-      androidNotificationOptions: AndroidNotificationOptions(
-        channelId: 'foreground_service',
-        channelName: 'Foreground Service Notification',
-        channelDescription: 'This notification appears when the foreground service is running.',
-        onlyAlertOnce: true,
-      ),
-      iosNotificationOptions: const IOSNotificationOptions(
-        showNotification: false,
-        playSound: false,
-      ),
-      foregroundTaskOptions: ForegroundTaskOptions(
-        eventAction: ForegroundTaskEventAction.repeat(5000),
-        autoRunOnBoot: true,
-        autoRunOnMyPackageReplaced: true,
-        allowWakeLock: true,
-        allowWifiLock: true,
-      ),
-    );
-  }
-
   @override
   void initState() {
     super.initState();
@@ -92,13 +78,15 @@ class _MainScreenState extends State<MainScreen> {
       // Add a callback to receive data sent from the TaskHandler.
       FlutterForegroundTask.addTaskDataCallback(_onReceiveTaskData);
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         // Request permissions and initialize the service.
-        _requestPermissions();
-        _initService();
-      });
+        await _requestPermissions();
+        await initBackgroundTask();
 
-      startService();
+        final enabled = await _secureStorage.read(key: _kMainServiceEnabledFlag);
+        if (enabled == '0') return;
+        await startService();
+      });
     }
   }
 
@@ -115,7 +103,9 @@ class _MainScreenState extends State<MainScreen> {
       builder: (context, state) {
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
-          child: state is UserAuthenticated ? const AuthenticatedScreen() : const HomeScreen(),
+          child: state is UserAuthenticated
+              ? const AuthenticatedScreen()
+              : const HomeScreen(),
         );
       },
     );

@@ -35,6 +35,9 @@ class MainActivity : FlutterActivity() {
         if (action == "enableKioskMode") {
             Log.d("MainActivity", "Received action to enable kiosk mode")
             policyService.enableKioskModeFull()
+        } else if (action == "rebootDevice") {
+            Log.d("MainActivity", "Received action to reboot device")
+            policyService.rebootDevice()
         }
 
         if (isDebug()) {
@@ -53,6 +56,9 @@ class MainActivity : FlutterActivity() {
         if (action == "enableKioskMode") {
             Log.d("MainActivity", "onNewIntent received action to enable kiosk mode")
             policyService.enableKioskModeFull()
+        } else if (action == "rebootDevice") {
+            Log.d("MainActivity", "onNewIntent received action to reboot device")
+            policyService.rebootDevice()
         }
     }
 
@@ -117,6 +123,10 @@ class MainActivity : FlutterActivity() {
                 "preventUninstall" -> {
                     policyService.preventUninstall()
                     result.success("Uninstall Blocked")
+                }
+                "rebootDevice" -> {
+                    policyService.rebootDevice()
+                    result.success("Device Reboot Requested")
                 }
                 "getAdminStatus" -> result.success(policyService.isAdminEnabled())
                 "getKioskStatus" -> result.success(policyService.isInKioskMode())
@@ -241,4 +251,3 @@ class MainActivity : FlutterActivity() {
     // fun stopStatusBarBlocker() {
     //     SystemOverlayService.stopService(this)
     // }
-

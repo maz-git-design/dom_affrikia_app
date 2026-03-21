@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "959598773891",
+    "project_id": "afrrikia-mdm",
+    "storage_bucket": "afrrikia-mdm.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:959598773891:android:6f5c846bf0d41ccfe73db6",
+        "android_client_info": {
+          "package_name": "com.example.dom_affrikia_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAujln86ew_xPE8qpxci6CdQ-HyLobc4AU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -84,15 +84,27 @@ class MyDevicePolicyService(private val context: Context) {
     fun setRestrictions(enable: Boolean) {
         if (!dpm.isAdminActive(adminComponent)) return
     
+        // val restrictions = listOf(
+        //     UserManager.DISALLOW_FACTORY_RESET,
+        //     UserManager.DISALLOW_USB_FILE_TRANSFER,
+        //     UserManager.DISALLOW_UNINSTALL_APPS,
+        //     UserManager.DISALLOW_SAFE_BOOT,
+        //     UserManager.DISALLOW_CONFIG_TETHERING,
+        //     UserManager.DISALLOW_ADD_USER,
+        //     UserManager.DISALLOW_CONFIG_DATE_TIME,
+        //     UserManager.DISALLOW_DEBUGGING_FEATURES,
+        //     UserManager.DISALLOW_APPS_CONTROL
+        // )
+
         val restrictions = listOf(
-            UserManager.DISALLOW_FACTORY_RESET,
-            UserManager.DISALLOW_USB_FILE_TRANSFER,
+            //UserManager.DISALLOW_FACTORY_RESET,
+            //UserManager.DISALLOW_USB_FILE_TRANSFER,
             UserManager.DISALLOW_UNINSTALL_APPS,
-            UserManager.DISALLOW_SAFE_BOOT,
+            //UserManager.DISALLOW_SAFE_BOOT,
             UserManager.DISALLOW_CONFIG_TETHERING,
             UserManager.DISALLOW_ADD_USER,
             UserManager.DISALLOW_CONFIG_DATE_TIME,
-            UserManager.DISALLOW_DEBUGGING_FEATURES,
+            //UserManager.DISALLOW_DEBUGGING_FEATURES,
             UserManager.DISALLOW_APPS_CONTROL
         )
     
@@ -130,6 +142,26 @@ class MyDevicePolicyService(private val context: Context) {
     fun wipeDevice() {
         if (dpm.isAdminActive(adminComponent)) {
             dpm.wipeData(DevicePolicyManager.WIPE_EXTERNAL_STORAGE)
+        }
+    }
+
+    fun rebootDevice() {
+        if (!dpm.isAdminActive(adminComponent)) {
+            Log.e("DPC", "Cannot reboot: admin not active")
+            return
+        }
+        if (!dpm.isDeviceOwnerApp(context.packageName)) {
+            Log.e("DPC", "Cannot reboot: app is not device owner")
+            return
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            Log.e("DPC", "Cannot reboot: requires Android N+")
+            return
+        }
+        try {
+            dpm.reboot(adminComponent)
+        } catch (t: Throwable) {
+            Log.e("DPC", "Device reboot failed", t)
         }
     }
 
@@ -301,11 +333,11 @@ class MyDevicePolicyService(private val context: Context) {
         
 
         // Prevent USB debugging (optional)
-        if (isDebug()) {
-            Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 1)
-        } else {
-            Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 0)
-        }
+        // if (isDebug()) {
+        //     Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 1)
+        // } else {
+        //     Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 0)
+        // }
         
 
         // Block uninstallation of your app

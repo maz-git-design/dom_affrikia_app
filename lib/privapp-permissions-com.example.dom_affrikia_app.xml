@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<permissions>
+    <privapp-permissions package="com.example.dom_affrikia_app">
+
+        <!-- Device Admin / Policy -->
+        <permission name="android.permission.BIND_DEVICE_ADMIN"/>
+        <permission name="android.permission.MANAGE_DEVICE_ADMINS"/>
+        <permission name="android.permission.MANAGE_USERS"/>
+        <permission name="android.permission.WRITE_SECURE_SETTINGS"/>
+        <permission name="android.permission.SET_FACTORY_RESET_PROTECTION_POLICY"/>
+
+        <!-- Power controls -->
+        <permission name="android.permission.LOCK_DEVICE"/>
+        <permission name="android.permission.REBOOT"/>
+        <permission name="android.permission.SHUTDOWN"/>
+
+        <!-- Kiosk / Lock task -->
+        <permission name="android.permission.DISABLE_KEYGUARD"/>
+        <permission name="android.permission.WAKE_LOCK"/>
+
+        <!-- Networking -->
+        <permission name="android.permission.ACCESS_NETWORK_STATE"/>
+        <permission name="android.permission.ACCESS_WIFI_STATE"/>
+        <permission name="android.permission.CHANGE_WIFI_STATE"/>
+        <permission name="android.permission.INTERNET"/>
+
+        <!-- Notifications & alarms -->
+        <permission name="android.permission.POST_NOTIFICATIONS"/>
+        <permission name="android.permission.SCHEDULE_EXACT_ALARM"/>
+        <permission name="android.permission.USE_EXACT_ALARM"/>
+
+        <!-- Foreground services -->
+        <permission name="android.permission.FOREGROUND_SERVICE"/>
+        <permission name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+        <permission name="android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING"/>
+
+    </privapp-permissions>
+</permissions>
+

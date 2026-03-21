@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<permissions>
+  <privapp-permissions package="com.example.dom_affrikia_app">
+
+    <!-- Core privileged / signature permissions -->
+    <permission name="android.permission.MANAGE_DEVICE_ADMINS"/>
+    <permission name="android.permission.MANAGE_USERS"/>
+    <permission name="android.permission.INTERACT_ACROSS_USERS"/>
+
+    <!-- Only keep if you really write secure/global settings -->
+    <permission name="android.permission.WRITE_SECURE_SETTINGS"/>
+
+    <!-- Only keep if you actually use FRP policy APIs (and device has GMS/OEM support) -->
+    <permission name="android.permission.SET_FACTORY_RESET_PROTECTION_POLICY"/>
+
+    <!-- Only keep if you truly call reboot/shutdown from code -->
+    <permission name="android.permission.REBOOT"/>
+    <permission name="android.permission.SHUTDOWN"/>
+
+    <permission name="android.permission.READ_PRIVILEGED_PHONE_STATE"/>
+
+  </privapp-permissions>
+</permissions>

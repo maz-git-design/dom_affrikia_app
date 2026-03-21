@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:background_downloader/background_downloader.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:dom_affrikia_app/core/config/config.dart';
 import 'package:dom_affrikia_app/core/entities/app_update_info.dart';
@@ -19,6 +20,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // void startMyBackgroundTask() async {
 //   var phoneState = await MyTaskHandler._secureStorage.read(key: "phoneState");
@@ -73,6 +75,10 @@ void startCallback() {
 
 class MyTaskHandler extends TaskHandler {
   StreamSubscription? _downloadSubscription;
+  static const String _kManagedUpdateUrl = 'md_update_apk_url';
+  static const String _kManagedUpdateInProgress = 'md_update_in_progress';
+  static const String _kManagedUpdatePercent = 'md_update_percent';
+  static const String _kMainServiceEnabledFlag = 'mainServiceEnabledFlag';
 
   static const FlutterSecureStorage _secureStorage =
       FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
@@ -87,14 +93,361 @@ class MyTaskHandler extends TaskHandler {
       receiveTimeout: const Duration(seconds: 60000),
     ),
   );
+  static final Dio _managedDeviceDio = Dio(
+    BaseOptions(
+      baseUrl: VOD_IP.startsWith('http') ? VOD_IP : 'http://$VOD_IP',
+      connectTimeout: const Duration(seconds: 60000),
+      receiveTimeout: const Duration(seconds: 60000),
+    ),
+  );
 
   // Called when the task is started.
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
-    //await init();
-
-    //initNotifications();
     log('onStart(starter: ${starter.name})');
+    await ensureManagedDeviceBootstrapIfNeeded();
+    await sendPendingRebootAckIfNeeded();
+    await processPendingCommandsQueue();
+    await sendManagedDeviceStateSnapshot();
+  }
+
+  Future<bool?> _readAdminStatusViaBroadcast(String action) async {
+    if (!Platform.isAndroid) return null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final tsKey = '${action}_ts';
+      final beforeTs = int.tryParse(prefs.getString(tsKey) ?? '0') ?? 0;
+
+      final intent = AndroidIntent(
+        action: 'com.example.dom_affrikia_app.ACTION_ADMIN',
+        package: 'com.example.dom_affrikia_app',
+        componentName: 'com.example.dom_affrikia_app.AdminActionReceiver',
+        arguments: {'action': action},
+      );
+      await intent.sendBroadcast();
+
+      // Wait until receiver writes a fresh value (avoid stale read).
+      for (var i = 0; i < 8; i++) {
+        await Future.delayed(const Duration(milliseconds: 120));
+        await prefs.reload();
+        final afterTs = int.tryParse(prefs.getString(tsKey) ?? '0') ?? 0;
+        if (afterTs > beforeTs) {
+          return prefs.getBool(action);
+        }
+      }
+
+      return prefs.getBool(action);
+    } catch (e) {
+      log('Failed to read admin status for $action: $e');
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>> _collectManagedPhoneState() async {
+    final mappings = <Map<String, dynamic>>[
+      {'action': 'getFactoryResetStatus', 'field': 'factoryResetEnabled', 'invert': true},
+      {'action': 'getKioskStatus', 'field': 'kioskModeEnable', 'invert': false},
+      {'action': 'getAdbDebuggingStatus', 'field': 'adbEnable', 'invert': true},
+      {'action': 'getUsbTransferStatus', 'field': 'usbftransfertEnabled', 'invert': true},
+      {'action': 'getUninstallAppsStatus', 'field': 'uninstallEnabled', 'invert': true},
+      {'action': 'getInstallAppsStatus', 'field': 'installappsEnabled', 'invert': true},
+      {'action': 'getSafeBootStatus', 'field': 'safebootEnabled', 'invert': true},
+      {'action': 'getTetheringStatus', 'field': 'tetheringEnabled', 'invert': true},
+      {'action': 'getAddUserStatus', 'field': 'addUserenabled', 'invert': true},
+      {'action': 'getDateTimeStatus', 'field': 'updateDateEnabled', 'invert': true},
+      {'action': 'getAdbFeaturesStatus', 'field': 'devOptionsEnabled', 'invert': true},
+      {'action': 'getAppsControlStatus', 'field': 'appsControlEnabled', 'invert': true},
+    ];
+
+    final state = <String, dynamic>{};
+    for (final mapping in mappings) {
+      final raw = await _readAdminStatusViaBroadcast(mapping['action'] as String);
+      final invert = mapping['invert'] as bool;
+      final liveValue = raw == null ? false : (invert ? !raw : raw);
+      state[mapping['field'] as String] = liveValue;
+    }
+
+    state['mainServiceEnabled'] = await FlutterForegroundTask.isRunningService;
+    return state;
+  }
+
+  Future<void> ensureManagedDeviceBootstrapIfNeeded() async {
+    final enrolled = await _secureStorage.read(key: 'enrolled');
+    if (enrolled == '1') return;
+    final isConnected = await internetConnectionChecker.hasConnection;
+    if (!isConnected) return;
+    final imei = await _secureStorage.read(key: 'phoneIMEI');
+    if (imei == null || imei.isEmpty) return;
+
+    final customerCode = await _secureStorage.read(key: 'customerCode');
+    final adminPassword = await _secureStorage.read(key: 'adminPassword');
+    final fcmToken = await _secureStorage.read(key: 'fcmToken');
+    final backgroundPeriodRaw = await _secureStorage.read(key: 'backgroundPeriod');
+    final backgroundPeriod = int.tryParse(backgroundPeriodRaw ?? '') ?? 5;
+
+    String? appVersion;
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
+    } catch (_) {}
+    String model = 'ANDROID_DEVICE';
+    String androidVersion = Platform.operatingSystemVersion;
+    try {
+      final android = await DeviceInfoPlugin().androidInfo;
+      model = '${android.brand} ${android.model}'.trim();
+      androidVersion = android.version.release;
+    } catch (_) {}
+
+    options.headers?['deviceId'] = imei;
+    try {
+      await _managedDeviceDio.post(
+        '/managed-device/bootstrap',
+        data: {
+          'model': model,
+          'fcmToken': fcmToken,
+          'deviceStatus': 'CONNECTED',
+          'phoneLockState': await _resolvePhoneLockState(),
+          'phoneState': await _collectManagedPhoneState(),
+          'deviceAdminPassword': adminPassword,
+          'backgroundPeriod': backgroundPeriod,
+          'onboardingState': {
+            'value': customerCode != null && customerCode.trim().isNotEmpty,
+            'code': customerCode,
+          },
+          'androidVersion': androidVersion,
+          'appVersion': appVersion,
+        },
+        options: options,
+      );
+      await _secureStorage.write(key: 'enrolled', value: '1');
+    } catch (e) {
+      log('Managed bootstrap failed: $e');
+    }
+  }
+
+  Future<String?> _resolvePhoneLockState() async {
+    final phoneState = await _secureStorage.read(key: 'phoneState');
+    if (phoneState == '0') return 'LOCKED';
+    if (phoneState == '1') return 'PARTIALLY_UNLOCKED';
+    if (phoneState == '2') return 'UNLOCKED';
+    return null;
+  }
+
+  Future<void> sendManagedDeviceStateSnapshot({String? overrideStatus}) async {
+    final isConnected = await internetConnectionChecker.hasConnection;
+    if (!isConnected) return;
+    final imei = await _secureStorage.read(key: 'phoneIMEI');
+    if (imei == null || imei.isEmpty) return;
+    final customerCode = await _secureStorage.read(key: 'customerCode');
+    final adminPassword = await _secureStorage.read(key: 'adminPassword');
+    final backgroundPeriodRaw = await _secureStorage.read(key: 'backgroundPeriod');
+    final backgroundPeriod = int.tryParse(backgroundPeriodRaw ?? '') ?? 5;
+    final managedUpdateInProgress = await _secureStorage.read(key: _kManagedUpdateInProgress);
+    final updatePercentRaw = await _secureStorage.read(key: _kManagedUpdatePercent);
+    final updatePercent = int.tryParse(updatePercentRaw ?? '');
+    String? appVersion;
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
+    } catch (_) {}
+
+    options.headers?['deviceId'] = imei;
+    try {
+      await _managedDeviceDio.put(
+        '/managed-device/state/imei',
+        data: {
+          'deviceStatus': overrideStatus ?? (managedUpdateInProgress == '1' ? 'UPDATING' : 'CONNECTED'),
+          'phoneLockState': await _resolvePhoneLockState(),
+          'phoneState': await _collectManagedPhoneState(),
+          'deviceAdminPassword': adminPassword,
+          'backgroundPeriod': backgroundPeriod,
+          'updatePercent': updatePercent,
+          'onboardingState': {
+            'value': customerCode != null && customerCode.trim().isNotEmpty,
+            'code': (customerCode != null && customerCode.trim().isNotEmpty) ? customerCode : null,
+          },
+          'androidVersion': Platform.operatingSystemVersion,
+          'appVersion': appVersion,
+        },
+        options: options,
+      );
+    } catch (e) {
+      log('Managed state snapshot failed: $e');
+    }
+  }
+
+  Future<List<dynamic>> _fetchPendingCommands() async {
+    final imei = await _secureStorage.read(key: 'phoneIMEI');
+    if (imei == null || imei.isEmpty) return <dynamic>[];
+    options.headers?['deviceId'] = imei;
+    try {
+      final response = await _managedDeviceDio.get('/device-command/pending/by-imei', options: options);
+      final data = response.data;
+      if (data is List) return data;
+      return <dynamic>[];
+    } catch (e) {
+      log('Fetch pending commands failed: $e');
+      return <dynamic>[];
+    }
+  }
+
+  String _normalizeCommandType(dynamic raw) {
+    return (raw ?? '').toString().trim().toUpperCase().replaceAll('-', '_').replaceAll(' ', '_');
+  }
+
+  Future<void> _ackCommand(dynamic commandId, String status) async {
+    if (commandId == null) return;
+    final imei = await _secureStorage.read(key: 'phoneIMEI');
+    if (imei == null || imei.isEmpty) return;
+    options.headers?['deviceId'] = imei;
+    try {
+      await _managedDeviceDio.post('/device-command/ack/$commandId', data: {'status': status}, options: options);
+    } catch (e) {
+      log('Ack command failed id=$commandId status=$status error=$e');
+    }
+  }
+
+  Future<void> _markPendingRebootAck(dynamic commandId) async {
+    if (commandId == null) return;
+    await _secureStorage.write(key: 'rebooted', value: '1');
+    await _secureStorage.write(key: 'rebootCommandId', value: commandId.toString());
+  }
+
+  Future<void> sendPendingRebootAckIfNeeded() async {
+    final rebooted = await _secureStorage.read(key: 'rebooted');
+    if (rebooted != '1') return;
+    final commandId = await _secureStorage.read(key: 'rebootCommandId');
+    if (commandId != null && commandId.isNotEmpty) {
+      await _ackCommand(commandId, 'EXECUTED');
+    }
+    await _secureStorage.delete(key: 'rebooted');
+    await _secureStorage.delete(key: 'rebootCommandId');
+  }
+
+  Future<bool> _executeCommandLocally(String commandType, {String? commandValue, dynamic commandId}) async {
+    final type = _normalizeCommandType(commandType);
+    final actionMap = <String, String>{
+      'LOCK_DEVICE': 'enableKioskMode',
+      'UNLOCK_DEVICE': 'disableKioskModePartially',
+      'WIPE': 'wipeDevice',
+      'REBOOT': 'rebootDevice',
+      'ENABLE_FACTORY_RESET': 'allowFactoryReset',
+      'DISABLE_FACTORY_RESET': 'blockFactoryReset2',
+      'ENABLE_KIOSK_MODE': 'enableKioskMode',
+      'DISABLE_KIOSK_MODE': 'disableKioskModePartially',
+      'ENABLE_ADB': 'allowAdbDebugging',
+      'DISABLE_ADB': 'blockAdbDebugging',
+      'ENABLE_USB_TRANSFER': 'allowUsbTransfer',
+      'DISABLE_USB_TRANSFER': 'blockUsbTransfer',
+      'ENABLE_UNINSTALL': 'allowUninstallApps',
+      'DISABLE_UNINSTALL': 'blockUninstallApps',
+      'ENABLE_INSTALL_APPS': 'allowInstallApps',
+      'DISABLE_INSTALL_APPS': 'blockInstallApps',
+      'ENABLE_SAFE_BOOT': 'allowSafeBoot',
+      'DISABLE_SAFE_BOOT': 'blockSafeBoot',
+      'ENABLE_TETHERING': 'allowTethering',
+      'DISABLE_TETHERING': 'blockTethering',
+      'ENABLE_ADD_USER': 'allowAddUser',
+      'DISABLE_ADD_USER': 'blockAddUser',
+      'ENABLE_UPDATE_DATE': 'allowDateConfig',
+      'DISABLE_UPDATE_DATE': 'blockDateConfig',
+      'ENABLE_DEV_OPTIONS': 'allowAdbFeatures',
+      'DISABLE_DEV_OPTIONS': 'blockAdbFeatures',
+      'ENABLE_APPS_CONTROL': 'allowAppsControl',
+      'DISABLE_APPS_CONTROL': 'blockAppsControl',
+      'UNREGISTER_DEVICE': 'disableAdmin',
+      'UNREGISTER_ONBOARDING': 'disableAdmin',
+    };
+
+    if (type == 'STATUS') {
+      await sendManagedDeviceStateSnapshot();
+      return true;
+    }
+    if (type == 'ENABLE_MAIN_SERVICE') {
+      await _secureStorage.write(key: _kMainServiceEnabledFlag, value: '1');
+      // Service is already running in this execution context.
+      return true;
+    }
+    if (type == 'DISABLE_MAIN_SERVICE') {
+      await _secureStorage.write(key: _kMainServiceEnabledFlag, value: '0');
+      // Stop service after ACK to avoid losing command acknowledgment.
+      await _secureStorage.write(key: 'mainServiceStopRequested', value: '1');
+      return true;
+    }
+    if (type == 'CHANGE_ADMIN_PASSWORD') {
+      if (commandValue == null || commandValue.trim().isEmpty) return false;
+      await _secureStorage.write(key: 'adminPassword', value: commandValue.trim());
+      await sendManagedDeviceStateSnapshot();
+      return true;
+    }
+    if (type == 'CHANGE_BACKGROUND_PERIOD') {
+      if (commandValue == null || int.tryParse(commandValue.trim()) == null) return false;
+      await _secureStorage.write(key: 'backgroundPeriod', value: commandValue.trim());
+      await sendManagedDeviceStateSnapshot();
+      return true;
+    }
+    if (type == 'UPDATE' || type == 'START_UPDATE') {
+      if (commandValue == null || commandValue.trim().isEmpty) return false;
+      await _secureStorage.write(key: _kManagedUpdateUrl, value: commandValue.trim());
+      await _secureStorage.write(key: _kManagedUpdateInProgress, value: '1');
+      await _secureStorage.write(key: _kManagedUpdatePercent, value: '0');
+      await _secureStorage.write(key: 'updateStatus', value: 'HasUpdate');
+      await sendManagedDeviceStateSnapshot(overrideStatus: 'UPDATING');
+      await updateApkHandler();
+      return true;
+    }
+    if (type == 'INTERRUPT_UPDATE') {
+      await _secureStorage.delete(key: _kManagedUpdateUrl);
+      await _secureStorage.write(key: _kManagedUpdateInProgress, value: '0');
+      await _secureStorage.write(key: _kManagedUpdatePercent, value: '0');
+      await sendManagedDeviceStateSnapshot(overrideStatus: 'CONNECTED');
+      return true;
+    }
+
+    final action = actionMap[type];
+    if (action == null) return false;
+    if (!Platform.isAndroid) return false;
+    try {
+      final intent = AndroidIntent(
+        action: 'com.example.dom_affrikia_app.ACTION_ADMIN',
+        package: 'com.example.dom_affrikia_app',
+        componentName: 'com.example.dom_affrikia_app.AdminActionReceiver',
+        arguments: {'action': action},
+      );
+      await intent.sendBroadcast();
+      if (type == 'REBOOT') {
+        await _markPendingRebootAck(commandId);
+      }
+      return true;
+    } catch (e) {
+      log('Execute command failed type=$type error=$e');
+      return false;
+    }
+  }
+
+  Future<void> processPendingCommandsQueue() async {
+    final commands = await _fetchPendingCommands();
+    if (commands.isEmpty) return;
+    for (final item in commands) {
+      dynamic id;
+      String type = '';
+      String? value;
+      if (item is Map) {
+        id = item['id'] ?? item['commandId'];
+        type = (item['commandType'] ?? '').toString();
+        final raw = item['commandValue'];
+        value = raw == null ? null : raw.toString();
+      }
+      if (id == null || type.isEmpty) continue;
+      final ok = await _executeCommandLocally(type, commandValue: value, commandId: id);
+      if (_normalizeCommandType(type) != 'REBOOT') {
+        await _ackCommand(id, ok ? 'EXECUTED' : 'FAILED');
+      }
+      if (_normalizeCommandType(type) == 'DISABLE_MAIN_SERVICE' && ok) {
+        await FlutterForegroundTask.stopService();
+        return;
+      }
+    }
   }
 
   Future<void> sendStatustoServer() async {
@@ -133,6 +486,24 @@ class MyTaskHandler extends TaskHandler {
     var updateStatus = await _secureStorage.read(key: "updateStatus");
     if (updateStatus == null) {
       await _secureStorage.write(key: "updateStatus", value: "NoUpdate");
+      updateStatus = "NoUpdate";
+    }
+
+    final managedUpdateUrl = await _secureStorage.read(key: _kManagedUpdateUrl);
+    if (managedUpdateUrl != null && managedUpdateUrl.trim().isNotEmpty) {
+      final fileName = managedUpdateUrl.split('/').last.trim().isEmpty
+          ? 'afrrikia-managed-update.apk'
+          : managedUpdateUrl.split('/').last.trim();
+      final forcedInfo = AppUpdateInfo(
+        id: 'managed-command',
+        url: managedUpdateUrl.trim(),
+        title: fileName,
+        updateInstall: 1,
+      );
+      await _secureStorage.write(key: "updateInfo", value: forcedInfo.toString());
+      await _secureStorage.write(key: "updateStatus", value: "HasUpdate");
+      FlutterForegroundTask.sendDataToMain({"updateStatus": "HasUpdate"});
+      return;
     }
 
     var isConnected = await internetConnectionChecker.hasConnection;
@@ -494,11 +865,13 @@ class MyTaskHandler extends TaskHandler {
     };
     log('onRepeatEvent(timestamp: $timestamp)');
 
-    await checkAppOpenWhenPhoneBlock();
+    //await checkAppOpenWhenPhoneBlock();
+    await processPendingCommandsQueue();
     // Check for overdue bills and block the phone if any are found
     await overDueHandler();
     // Send status of device to server
     await sendStatustoServer();
+    await sendManagedDeviceStateSnapshot();
     // Update notifications
     await updateNofification();
     // Check for new updates
@@ -529,6 +902,9 @@ class MyTaskHandler extends TaskHandler {
         // log('ForegroundService received event: $event');
         if (event == "com.example.dom_affrikia_app.APK_INSTALL_STARTED") {
           await _secureStorage.write(key: "updateStatus", value: "UpdateInstalling");
+          await _secureStorage.write(key: _kManagedUpdateInProgress, value: '1');
+          await _secureStorage.write(key: _kManagedUpdatePercent, value: '1');
+          await sendManagedDeviceStateSnapshot(overrideStatus: 'UPDATING');
           final Map<String, dynamic> dataToSend = {
             "installStatus": data['status'],
             "updateStatus": "UpdateInstalling",
@@ -537,6 +913,9 @@ class MyTaskHandler extends TaskHandler {
         }
         if (event == "com.example.dom_affrikia_app.APK_INSTALL_PROGRESS") {
           var progress = data['progress'] as num;
+          final percent = (progress * 100).clamp(0, 100).toInt();
+          await _secureStorage.write(key: _kManagedUpdatePercent, value: percent.toString());
+          await sendManagedDeviceStateSnapshot(overrideStatus: 'UPDATING');
 
           final Map<String, dynamic> dataToSend = {
             "installProgress": progress,
@@ -552,6 +931,10 @@ class MyTaskHandler extends TaskHandler {
           final String? filePath = await _secureStorage.read(key: "lastApkFilePath");
           await deleteAfrrikiaApk(filePath!);
           await _secureStorage.write(key: "updateStatus", value: "UpdateInstalled");
+          await _secureStorage.write(key: _kManagedUpdateInProgress, value: '0');
+          await _secureStorage.write(key: _kManagedUpdatePercent, value: '100');
+          await _secureStorage.delete(key: _kManagedUpdateUrl);
+          await sendManagedDeviceStateSnapshot(overrideStatus: 'CONNECTED');
         } else if (event == "com.example.dom_affrikia_app.APK_INSTALL_ERROR") {
           log("APK installation error: ${data['error']}");
           final Map<String, dynamic> dataToSend = {
@@ -560,6 +943,18 @@ class MyTaskHandler extends TaskHandler {
           };
           FlutterForegroundTask.sendDataToMain(dataToSend);
           await _secureStorage.write(key: "updateStatus", value: "UpdateInstallError");
+          await _secureStorage.write(key: _kManagedUpdateInProgress, value: '0');
+          await _secureStorage.write(key: _kManagedUpdatePercent, value: '0');
+          await sendManagedDeviceStateSnapshot(overrideStatus: 'CONNECTED');
+        }
+      } else if (data.containsKey('managed_update_url')) {
+        final updateUrl = (data['managed_update_url'] ?? '').toString();
+        if (updateUrl.isNotEmpty) {
+          await _secureStorage.write(key: _kManagedUpdateUrl, value: updateUrl);
+          await _secureStorage.write(key: _kManagedUpdateInProgress, value: '1');
+          await _secureStorage.write(key: _kManagedUpdatePercent, value: '0');
+          await sendManagedDeviceStateSnapshot(overrideStatus: 'UPDATING');
+          await downloadHandler();
         }
       }
     }

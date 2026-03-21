@@ -1,237 +1,9 @@
-// import 'package:flutter/material.dart';
-// import 'package:flutter/services.dart';
-// import 'package:shared_preferences/shared_preferences.dart';
-// import 'database_helper.dart';
-
-// void main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
-//   SharedPreferences prefs = await SharedPreferences.getInstance();
-//   //bool isActivated = prefs.getBool("isActivate") ?? false;
-//   bool isActivated = false;
-
-//   runApp(MaterialApp(
-//     debugShowCheckedModeBanner: false,
-//     title: 'Kiosk Mode',
-//     theme: ThemeData(primarySwatch: Colors.blue),
-//     home: ActivationScreen(),
-//   ));
-// }
-
-// class KioskApp extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       debugShowCheckedModeBanner: false,
-//       title: 'Kiosk Mode',
-//       theme: ThemeData(primarySwatch: Colors.blue),
-//       home: ActivationScreen(),
-//     );
-//   }
-// }
-
-// class ActivationScreen extends StatefulWidget {
-//   @override
-//   _ActivationScreenState createState() => _ActivationScreenState();
-// }
-
-// class _ActivationScreenState extends State<ActivationScreen> {
-//   static const platform = MethodChannel("device_admin");
-//   final TextEditingController _codeController = TextEditingController();
-//   String _message = "";
-//   bool isActivated = false;
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     enableKioskMode();
-//     checkActivationStatus();
-//   }
-
-//   Future<void> enableKioskMode() async {
-//     try {
-//       await platform.invokeMethod("enableKioskMode");
-//     } catch (e) {
-//       print("Error enabling Kiosk Mode: $e");
-//     }
-//   }
-
-//   Future<void> checkActivationStatus() async {
-//     //SharedPreferences prefs = await SharedPreferences.getInstance();
-//     // setState(() {
-
-//     //   isActivated = prefs.getBool("isActivated") ?? false;
-//     // });
-//   }
-
-//   Future<void> checkActivationCode() async {
-//     bool exists = await DatabaseHelper().checkCodeExists(_codeController.text);
-//     if (exists) {
-//       SharedPreferences prefs = await SharedPreferences.getInstance();
-//       await prefs.setBool("isActivated", true);
-
-//       setState(() {
-//         _message = "Activation Successful! Exiting Kiosk Mode...";
-//         isActivated = true;
-//       });
-
-//       // Exit Kiosk Mode (in a real app, you'd call a method to exit)
-//       await platform.invokeMethod("disableKioskMode");
-//     } else {
-//       setState(() {
-//         _message = "Invalid Code. Try Again!";
-//       });
-//     }
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(title: Text("Kiosk Mode Activation")),
-//       body: Padding(
-//         padding: const EdgeInsets.all(20.0),
-//         child: isActivated
-//             ? Center(child: Text("Device is activated."))
-//             : Column(
-//                 mainAxisAlignment: MainAxisAlignment.center,
-//                 children: [
-//                   Text("Enter Activation Code:", style: TextStyle(fontSize: 18)),
-//                   SizedBox(height: 20),
-//                   TextField(
-//                     controller: _codeController,
-//                     decoration: InputDecoration(
-//                       border: OutlineInputBorder(),
-//                       hintText: "Enter Code",
-//                     ),
-//                   ),
-//                   SizedBox(height: 20),
-//                   ElevatedButton(
-//                     onPressed: checkActivationCode,
-//                     child: Text("Submit"),
-//                   ),
-//                   SizedBox(height: 20),
-//                   Text(_message, style: TextStyle(color: Colors.red)),
-//                 ],
-//               ),
-//       ),
-//     );
-//   }
-// }
-
-// class AdminPanel extends StatefulWidget {
-//   @override
-//   _AdminPanelState createState() => _AdminPanelState();
-// }
-
-// class _AdminPanelState extends State<AdminPanel> {
-//   final TextEditingController _newCodeController = TextEditingController();
-//   String _adminMessage = "";
-
-//   Future<void> addActivationCode() async {
-//     bool success = await DatabaseHelper().insertCode(_newCodeController.text);
-//     setState(() {
-//       _adminMessage = success ? "Code Added Successfully!" : "Code Already Exists!";
-//     });
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(title: Text("Admin Panel")),
-//       body: Padding(
-//         padding: const EdgeInsets.all(20.0),
-//         child: Column(
-//           mainAxisAlignment: MainAxisAlignment.center,
-//           children: [
-//             Text("Add New Activation Code:", style: TextStyle(fontSize: 18)),
-//             SizedBox(height: 20),
-//             TextField(
-//               controller: _newCodeController,
-//               decoration: InputDecoration(
-//                 border: OutlineInputBorder(),
-//                 hintText: "Enter New Code",
-//               ),
-//             ),
-//             SizedBox(height: 20),
-//             ElevatedButton(
-//               onPressed: addActivationCode,
-//               child: Text("Add Code"),
-//             ),
-//             SizedBox(height: 20),
-//             Text(_adminMessage, style: TextStyle(color: Colors.green)),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-// import 'package:dom_affrikia_app/lock_screen.dart';
-// import 'package:flutter/material.dart';
-// import 'package:shared_preferences/shared_preferences.dart';
-// import 'activation_screen.dart';
-// import 'connection_panel.dart';
-// import 'admin_login_screen.dart';
-
-// void main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
-//   runApp(MyApp());
-// }
-
-// class MyApp extends StatelessWidget {
-//   // Future<Widget> checkActivation() async {
-//   //   String? code = await getSavedCode(); // Assume you saved code in SharedPreferences
-//   //   if (code == null) return ActivationScreen();
-
-//   //   bool expired = await isCycleExpired(code);
-//   //   if (expired) {
-//   //     return LockScreen(onUnlock: () {
-//   //       // You can navigate to ActivationScreen
-//   //     });
-//   //   } else {
-//   //     return HomeScreen(); // your normal screen
-//   //   }
-//   // }
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       title: 'Affrikia Device Manager',
-//       debugShowCheckedModeBanner: false,
-//       theme: ThemeData(
-//         primarySwatch: Colors.blue,
-//       ),
-//       home: HomeRouter(),
-//     );
-//   }
-// }
-
-// class HomeRouter extends StatefulWidget {
-//   @override
-//   _HomeRouterState createState() => _HomeRouterState();
-// }
-
-// class _HomeRouterState extends State<HomeRouter> {
-//   bool isActivated = false;
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     checkActivationStatus();
-//   }
-
-//   Future<void> checkActivationStatus() async {
-//     SharedPreferences prefs = await SharedPreferences.getInstance();
-//     setState(() {
-//       isActivated = prefs.getBool("isActivated") ?? false;
-//     });
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return ActivationScreen();
-//   }
-// }
 import 'dart:developer';
+import 'dart:io';
 
+import 'package:android_intent_plus/android_intent.dart';
+import 'package:dom_affrikia_app/background_task.dart' show startService;
+import 'package:dio/dio.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:dom_affrikia_app/core/errors/bloc/error_bloc.dart';
@@ -239,6 +11,7 @@ import 'package:dom_affrikia_app/core/ui/themes/app_themes.dart';
 import 'package:dom_affrikia_app/core/ui/themes/bloc/theme_bloc.dart';
 import 'package:dom_affrikia_app/get_imei.dart';
 import 'package:dom_affrikia_app/init_download.dart';
+import 'package:dom_affrikia_app/init_background_task.dart';
 import 'package:dom_affrikia_app/init_storage.dart';
 import 'package:dom_affrikia_app/modules/admin/features/presentation/bloc/admin/admin_bloc.dart';
 import 'package:dom_affrikia_app/modules/customer/features/presentation/bloc/activation_bloc.dart';
@@ -256,9 +29,234 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import 'core/config/config.dart';
+import 'firebase_options.dart';
 import 'injection_container.dart';
+
+const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true));
+const String _kMainServiceEnabledFlag = 'mainServiceEnabledFlag';
+final InternetConnectionChecker _internetConnectionChecker =
+    InternetConnectionChecker.createInstance();
+final Options _options =
+    Options(headers: {'Content-Type': 'application/json', 'deviceTypeId': '1'});
+final Dio _managedDio = Dio(
+  BaseOptions(
+    baseUrl: VOD_IP.startsWith('http') ? VOD_IP : 'http://$VOD_IP',
+    connectTimeout: const Duration(seconds: 60),
+    receiveTimeout: const Duration(seconds: 60),
+  ),
+);
+
+String _normalizeCommandType(dynamic raw) {
+  return (raw ?? '')
+      .toString()
+      .trim()
+      .toUpperCase()
+      .replaceAll('-', '_')
+      .replaceAll(' ', '_');
+}
+
+Future<void> _ackCommand(dynamic commandId, String status) async {
+  if (commandId == null) return;
+  final deviceId = await _secureStorage.read(key: 'phoneIMEI');
+  if (deviceId == null || deviceId.isEmpty) return;
+  _options.headers?['deviceId'] = deviceId;
+  try {
+    await _managedDio.post('/device-command/ack/$commandId',
+        data: {'status': status}, options: _options);
+  } catch (e) {
+    log('ACK failed for commandId=$commandId status=$status error=$e');
+  }
+}
+
+Future<List<dynamic>> _fetchPendingCommands() async {
+  final deviceId = await _secureStorage.read(key: 'phoneIMEI');
+  if (deviceId == null || deviceId.isEmpty) return <dynamic>[];
+  _options.headers?['deviceId'] = deviceId;
+  try {
+    final response = await _managedDio.get('/device-command/pending/by-imei',
+        options: _options);
+    final body = response.data;
+    if (body is List) return body;
+  } catch (e) {
+    log('Failed to fetch pending commands: $e');
+  }
+  return <dynamic>[];
+}
+
+Future<void> _broadcastAdminAction(String action) async {
+  if (!Platform.isAndroid) return;
+  final intent = AndroidIntent(
+    action: 'com.example.dom_affrikia_app.ACTION_ADMIN',
+    package: 'com.example.dom_affrikia_app',
+    componentName: 'com.example.dom_affrikia_app.AdminActionReceiver',
+    arguments: {'action': action},
+  );
+  await intent.sendBroadcast();
+}
+
+Future<bool> _executeCommand(dynamic command) async {
+  if (command is! Map) return false;
+  final commandType = _normalizeCommandType(command['commandType']);
+  final commandValue = command['commandValue']?.toString();
+  final commandId = command['id'] ?? command['commandId'];
+
+  final actions = <String, String>{
+    'LOCK_DEVICE': 'enableKioskMode',
+    'UNLOCK_DEVICE': 'disableKioskModePartially',
+    'WIPE': 'wipeDevice',
+    'REBOOT': 'rebootDevice',
+    'ENABLE_FACTORY_RESET': 'allowFactoryReset',
+    'DISABLE_FACTORY_RESET': 'blockFactoryReset2',
+    'ENABLE_KIOSK_MODE': 'enableKioskMode',
+    'DISABLE_KIOSK_MODE': 'disableKioskModePartially',
+    'ENABLE_ADB': 'allowAdbDebugging',
+    'DISABLE_ADB': 'blockAdbDebugging',
+    'ENABLE_USB_TRANSFER': 'allowUsbTransfer',
+    'DISABLE_USB_TRANSFER': 'blockUsbTransfer',
+    'ENABLE_UNINSTALL': 'allowUninstallApps',
+    'DISABLE_UNINSTALL': 'blockUninstallApps',
+    'ENABLE_INSTALL_APPS': 'allowInstallApps',
+    'DISABLE_INSTALL_APPS': 'blockInstallApps',
+    'ENABLE_SAFE_BOOT': 'allowSafeBoot',
+    'DISABLE_SAFE_BOOT': 'blockSafeBoot',
+    'ENABLE_TETHERING': 'allowTethering',
+    'DISABLE_TETHERING': 'blockTethering',
+    'ENABLE_ADD_USER': 'allowAddUser',
+    'DISABLE_ADD_USER': 'blockAddUser',
+    'ENABLE_UPDATE_DATE': 'allowDateConfig',
+    'DISABLE_UPDATE_DATE': 'blockDateConfig',
+    'ENABLE_DEV_OPTIONS': 'allowAdbFeatures',
+    'DISABLE_DEV_OPTIONS': 'blockAdbFeatures',
+    'ENABLE_APPS_CONTROL': 'allowAppsControl',
+    'DISABLE_APPS_CONTROL': 'blockAppsControl',
+    'UNREGISTER_DEVICE': 'disableAdmin',
+    'UNREGISTER_ONBOARDING': 'disableAdmin',
+  };
+
+  try {
+    if (commandType == 'ENABLE_MAIN_SERVICE') {
+      await _secureStorage.write(key: _kMainServiceEnabledFlag, value: '1');
+      await startService();
+      return true;
+    }
+    if (commandType == 'DISABLE_MAIN_SERVICE') {
+      await _secureStorage.write(key: _kMainServiceEnabledFlag, value: '0');
+      await FlutterForegroundTask.stopService();
+      return true;
+    }
+    if (commandType == 'CHANGE_ADMIN_PASSWORD') {
+      if (commandValue == null || commandValue.trim().isEmpty) return false;
+      await _secureStorage.write(
+          key: 'adminPassword', value: commandValue.trim());
+      return true;
+    }
+    if (commandType == 'CHANGE_BACKGROUND_PERIOD') {
+      if (commandValue == null || int.tryParse(commandValue.trim()) == null)
+        return false;
+      await _secureStorage.write(
+          key: 'backgroundPeriod', value: commandValue.trim());
+      return true;
+    }
+    if (commandType == 'UPDATE' || commandType == 'START_UPDATE') {
+      if (commandValue == null || commandValue.trim().isEmpty) return false;
+      await _secureStorage.write(
+          key: 'md_update_apk_url', value: commandValue.trim());
+      await _secureStorage.write(key: 'md_update_in_progress', value: '1');
+      await _secureStorage.write(key: 'md_update_percent', value: '0');
+      return true;
+    }
+    if (commandType == 'INTERRUPT_UPDATE') {
+      await _secureStorage.delete(key: 'md_update_apk_url');
+      await _secureStorage.write(key: 'md_update_in_progress', value: '0');
+      await _secureStorage.write(key: 'md_update_percent', value: '0');
+      return true;
+    }
+    if (commandType == 'STATUS') {
+      return true;
+    }
+    final action = actions[commandType];
+    if (action == null) return false;
+    await _broadcastAdminAction(action);
+    if (commandType == 'REBOOT' && commandId != null) {
+      await _secureStorage.write(key: 'rebooted', value: '1');
+      await _secureStorage.write(
+          key: 'rebootCommandId', value: commandId.toString());
+    }
+    return true;
+  } catch (e) {
+    log('Command execution error type=$commandType: $e');
+    return false;
+  }
+}
+
+Future<void> _processPendingCommandsQueue() async {
+  final commands = await _fetchPendingCommands();
+  if (commands.isEmpty) return;
+  for (final command in commands) {
+    final commandId =
+        (command is Map) ? (command['id'] ?? command['commandId']) : null;
+    final type =
+        (command is Map) ? _normalizeCommandType(command['commandType']) : '';
+    final ok = await _executeCommand(command);
+    if (type != 'REBOOT') {
+      await _ackCommand(commandId, ok ? 'EXECUTED' : 'FAILED');
+    }
+  }
+}
+
+Future<void> _sendPendingRebootAckIfNeeded() async {
+  final rebooted = await _secureStorage.read(key: 'rebooted');
+  if (rebooted != '1') return;
+  final commandId = await _secureStorage.read(key: 'rebootCommandId');
+  if (commandId != null && commandId.isNotEmpty) {
+    await _ackCommand(commandId, 'EXECUTED');
+  }
+  await _secureStorage.delete(key: 'rebooted');
+  await _secureStorage.delete(key: 'rebootCommandId');
+}
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await _processPendingCommandsQueue();
+}
+
+Future<void> _initFirebaseAndCommandListeners() async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  final messaging = FirebaseMessaging.instance;
+  await messaging.requestPermission();
+  final token = await messaging.getToken();
+  if (token != null && token.isNotEmpty) {
+    await _secureStorage.write(key: 'fcmToken', value: token);
+    final deviceId = await _secureStorage.read(key: 'phoneIMEI');
+    if (deviceId != null && deviceId.isNotEmpty) {
+      _options.headers?['deviceId'] = deviceId;
+      try {
+        await _managedDio.post('/managed-device/fcm-token/imei?fcmToken=$token',
+            options: _options);
+      } catch (e) {
+        log('Failed to sync FCM token: $e');
+      }
+    }
+  }
+  FirebaseMessaging.onMessage.listen((_) async {
+    await _sendPendingRebootAckIfNeeded();
+    await _processPendingCommandsQueue();
+  });
+  FirebaseMessaging.onMessageOpenedApp.listen((_) async {
+    await _sendPendingRebootAckIfNeeded();
+    await _processPendingCommandsQueue();
+  });
+}
 
 class AppBlocObserver extends BlocObserver {
   @override
@@ -276,15 +274,16 @@ class AppBlocObserver extends BlocObserver {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
-  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations(
+      [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
 
   // initialize instances
   init();
 
   //await stopService();
 
-  sl<MainDataProvider>().androidDeviceInfo = await sl<DeviceInfoPlugin>().androidInfo;
+  sl<MainDataProvider>().androidDeviceInfo =
+      await sl<DeviceInfoPlugin>().androidInfo;
   await initImei();
   //PackageInfo packageInfo = await PackageInfo.fromPlatform();
   //log("App version: $packageInfo");
@@ -293,8 +292,11 @@ Future<void> main() async {
   // init storage
   await initStorage();
   await initDownload();
+  await initBackgroundTask();
+  await _initFirebaseAndCommandListeners();
+  await _sendPendingRebootAckIfNeeded();
+  await _processPendingCommandsQueue();
 
-  //initBackgroundTask();
   FlutterForegroundTask.initCommunicationPort();
 
   // // Local notification initialization
@@ -336,7 +338,8 @@ class MyApp extends StatelessWidget {
         builder: (context, _) => BlocBuilder<ThemeBloc, ThemeState>(
           builder: (context, state) {
             return AnnotatedRegion<SystemUiOverlayStyle>(
-              value: const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
+              value: const SystemUiOverlayStyle(
+                  statusBarColor: Colors.transparent),
               child: MaterialApp(
                 // localizationsDelegates: context.localizationDelegates,
                 // supportedLocales: context.supportedLocales,
@@ -352,7 +355,8 @@ class MyApp extends StatelessWidget {
                 home: const MainScreen(),
                 routes: {
                   HomeScreen.routeName: (context) => const HomeScreen(),
-                  AuthenticatedScreen.routeName: (context) => const AuthenticatedScreen(),
+                  AuthenticatedScreen.routeName: (context) =>
+                      const AuthenticatedScreen(),
                   MainScreen.routeName: (context) => const MainScreen(),
                   ContractScreen.routeName: (context) => const ContractScreen(),
                   AboutScreen.routeName: (context) => const AboutScreen(),
