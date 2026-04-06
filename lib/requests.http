@@ -2,10 +2,10 @@ POST http://localhost:7001/common/uploadKycInfo
 Content-Type: application/json
 
 {
-  "name": "Lionnel",
+  "name": "Christian",
   "surname": "Mabanzaka",
-  "birthday": "22/08/2006",
-  "phone": "243892007343",
+  "birthday": "22/08/2007",
+  "phone": "243892007347",
   "idNumber": "string",
   "address": "string",
   "status": "pending",
@@ -17,7 +17,7 @@ Content-Type: application/json
 #### Activate Device with bill generation (Using Activation Code)
 POST http://localhost:7001/device/activate?code=A00QWL&deviceType=1
 Content-Type: application/json
-deviceId: 2536278193U2
+deviceId: 867400020316612
 deviceTypeId: 1
 
 {

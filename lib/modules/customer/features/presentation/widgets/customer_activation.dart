@@ -15,6 +15,7 @@ import 'package:dom_affrikia_app/modules/main/features/middleware/providers/main
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:keyboard_visibility_pro/keyboard_visibility_pro.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -28,6 +29,10 @@ class CustomerActivation extends StatefulWidget with ValidatorMixin {
 }
 
 class _CustomerActivationState extends State<CustomerActivation> {
+  static const String _kSuppressForegroundLaunchUntilMs =
+      'suppressForegroundLaunchUntilMs';
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
+      aOptions: AndroidOptions(encryptedSharedPreferences: true));
   bool _keyboardOpen = false;
   int _tapCounter = 0;
   DateTime _firstTapTime = DateTime.now();
@@ -56,7 +61,8 @@ class _CustomerActivationState extends State<CustomerActivation> {
   }
 
   void getConnectionStatus() async {
-    sl<MainDataProvider>().hasConnection = await sl<InternetConnectionChecker>().hasConnection;
+    sl<MainDataProvider>().hasConnection =
+        await sl<InternetConnectionChecker>().hasConnection;
     setState(() {});
   }
 
@@ -81,7 +87,8 @@ class _CustomerActivationState extends State<CustomerActivation> {
     super.initState();
 
     getConnectionStatus();
-    internetStatusSubscription = sl<InternetConnectionChecker>().onStatusChange.listen((status) {
+    internetStatusSubscription =
+        sl<InternetConnectionChecker>().onStatusChange.listen((status) {
       switch (status) {
         case InternetConnectionStatus.connected:
           setState(() {
@@ -98,7 +105,8 @@ class _CustomerActivationState extends State<CustomerActivation> {
         default:
       }
     });
-    connectivitySubscription = sl<Connectivity>().onConnectivityChanged.listen((result) {
+    connectivitySubscription =
+        sl<Connectivity>().onConnectivityChanged.listen((result) {
       setState(() {
         connectivityType = result;
       });
@@ -112,14 +120,23 @@ class _CustomerActivationState extends State<CustomerActivation> {
     super.dispose();
   }
 
-  void openWifiSettings() {
+  Future<void> _suppressAutoLaunchWhileOpeningSettings() async {
+    final until = DateTime.now().millisecondsSinceEpoch +
+        const Duration(minutes: 2).inMilliseconds;
+    await _secureStorage.write(
+        key: _kSuppressForegroundLaunchUntilMs, value: until.toString());
+  }
+
+  void openWifiSettings() async {
+    await _suppressAutoLaunchWhileOpeningSettings();
     const intent = AndroidIntent(
       action: 'android.settings.WIFI_SETTINGS',
     );
     intent.launch();
   }
 
-  void openMobileDataSettings() {
+  void openMobileDataSettings() async {
+    await _suppressAutoLaunchWhileOpeningSettings();
     const intent = AndroidIntent(
       action: 'android.settings.DATA_ROAMING_SETTINGS',
     );
@@ -140,7 +157,9 @@ class _CustomerActivationState extends State<CustomerActivation> {
         overlayColor: Colors.grey.withValues(alpha: 0.5),
         overlayWidgetBuilder: (_) {
           //ignored progress for the moment
-          return Center(child: Image.asset('assets/loading.gif', fit: BoxFit.contain, height: 60.h));
+          return Center(
+              child: Image.asset('assets/loading.gif',
+                  fit: BoxFit.contain, height: 60.h));
         },
         child: Stack(
           children: <Widget>[
@@ -168,7 +187,8 @@ class _CustomerActivationState extends State<CustomerActivation> {
                   } else if (state is ActivationLoading) {
                     context.loaderOverlay.show();
                   } else if (state is ActivationDone) {
-                    sl<DialogBox>().showSnackBar(context, "Activation réussie!");
+                    sl<DialogBox>()
+                        .showSnackBar(context, "Activation réussie!");
                     context.loaderOverlay.hide();
                   } else if (state is ActivationBillTypesLoaded) {
                     context.loaderOverlay.hide();
@@ -182,7 +202,10 @@ class _CustomerActivationState extends State<CustomerActivation> {
               ),
             ),
             Padding(
-              padding: EdgeInsets.only(top: size.height <= 640 ? 10.h : 25.h, left: 20.w, right: 20.w),
+              padding: EdgeInsets.only(
+                  top: size.height <= 640 ? 10.h : 25.h,
+                  left: 20.w,
+                  right: 20.w),
               child: SizedBox(
                 height: 150.h,
                 width: double.infinity,
@@ -199,7 +222,9 @@ class _CustomerActivationState extends State<CustomerActivation> {
                           ),
                           SizedBox(width: 5.0.w),
                           Text(
-                            sl<MainDataProvider>().hasConnection ? "Connecté" : "Déconnecté",
+                            sl<MainDataProvider>().hasConnection
+                                ? "Connecté"
+                                : "Déconnecté",
                             style: TextStyle(
                               fontSize: 12.sp,
                               color: Colors.white,
@@ -210,14 +235,18 @@ class _CustomerActivationState extends State<CustomerActivation> {
                           Icon(
                             Icons.circle,
                             size: 12.0.sp,
-                            color: sl<MainDataProvider>().hasConnection ? Colors.green : Colors.red,
+                            color: sl<MainDataProvider>().hasConnection
+                                ? Colors.green
+                                : Colors.red,
                           ),
                           const Spacer(),
                           IconButton.filled(
                             style: IconButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 0),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 0),
                               visualDensity: VisualDensity.compact,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
                               alignment: Alignment.center,
                               backgroundColor: Theme.of(context).canvasColor,
                               elevation: 8,
@@ -252,9 +281,11 @@ class _CustomerActivationState extends State<CustomerActivation> {
                           ),
                           IconButton.filled(
                             style: IconButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 0),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 0),
                               visualDensity: VisualDensity.compact,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
                               alignment: Alignment.center,
                               backgroundColor: Theme.of(context).canvasColor,
                               elevation: 8,
@@ -290,16 +321,19 @@ class _CustomerActivationState extends State<CustomerActivation> {
                           ),
                           IconButton.filled(
                             style: IconButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 0),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 0),
                               visualDensity: VisualDensity.compact,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
                               alignment: Alignment.center,
                               backgroundColor: Theme.of(context).canvasColor,
                               elevation: 8,
                             ),
                             splashRadius: 10,
                             onPressed: () {
-                              Navigator.of(context).pushNamed(AboutScreen.routeName);
+                              Navigator.of(context)
+                                  .pushNamed(AboutScreen.routeName);
                             },
                             icon: Icon(
                               MdiIcons.informationVariant,

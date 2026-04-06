@@ -84,29 +84,29 @@ class MyDevicePolicyService(private val context: Context) {
     fun setRestrictions(enable: Boolean) {
         if (!dpm.isAdminActive(adminComponent)) return
     
-        // val restrictions = listOf(
-        //     UserManager.DISALLOW_FACTORY_RESET,
-        //     UserManager.DISALLOW_USB_FILE_TRANSFER,
-        //     UserManager.DISALLOW_UNINSTALL_APPS,
-        //     UserManager.DISALLOW_SAFE_BOOT,
-        //     UserManager.DISALLOW_CONFIG_TETHERING,
-        //     UserManager.DISALLOW_ADD_USER,
-        //     UserManager.DISALLOW_CONFIG_DATE_TIME,
-        //     UserManager.DISALLOW_DEBUGGING_FEATURES,
-        //     UserManager.DISALLOW_APPS_CONTROL
-        // )
-
         val restrictions = listOf(
-            //UserManager.DISALLOW_FACTORY_RESET,
-            //UserManager.DISALLOW_USB_FILE_TRANSFER,
+            UserManager.DISALLOW_FACTORY_RESET,
+            UserManager.DISALLOW_USB_FILE_TRANSFER,
             UserManager.DISALLOW_UNINSTALL_APPS,
-            //UserManager.DISALLOW_SAFE_BOOT,
+            UserManager.DISALLOW_SAFE_BOOT,
             UserManager.DISALLOW_CONFIG_TETHERING,
             UserManager.DISALLOW_ADD_USER,
             UserManager.DISALLOW_CONFIG_DATE_TIME,
-            //UserManager.DISALLOW_DEBUGGING_FEATURES,
+            UserManager.DISALLOW_DEBUGGING_FEATURES,
             UserManager.DISALLOW_APPS_CONTROL
         )
+
+        // val restrictions = listOf(
+        //     //UserManager.DISALLOW_FACTORY_RESET,
+        //     //UserManager.DISALLOW_USB_FILE_TRANSFER,
+        //     UserManager.DISALLOW_UNINSTALL_APPS,
+        //     //UserManager.DISALLOW_SAFE_BOOT,
+        //     UserManager.DISALLOW_CONFIG_TETHERING,
+        //     UserManager.DISALLOW_ADD_USER,
+        //     UserManager.DISALLOW_CONFIG_DATE_TIME,
+        //     //UserManager.DISALLOW_DEBUGGING_FEATURES,
+        //     UserManager.DISALLOW_APPS_CONTROL
+        // )
     
         for (restriction in restrictions) {
             if (enable) {
@@ -333,11 +333,11 @@ class MyDevicePolicyService(private val context: Context) {
         
 
         // Prevent USB debugging (optional)
-        // if (isDebug()) {
-        //     Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 1)
-        // } else {
-        //     Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 0)
-        // }
+        if (isDebug()) {
+            Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 1)
+        } else {
+            Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 0)
+        }
         
 
         // Block uninstallation of your app

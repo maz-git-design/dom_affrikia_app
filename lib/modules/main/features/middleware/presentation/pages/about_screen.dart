@@ -156,6 +156,7 @@ class _AboutScreenState extends State<AboutScreen> {
                         textAlign: TextAlign.justify,
                       ),
                     ),
+                  const SizedBox(height: 8),
                 ],
               ),
             ),
@@ -169,7 +170,7 @@ class _AboutScreenState extends State<AboutScreen> {
                 child: Row(
                   children: [
                     const Text(
-                      '© 2025 SIX. Tous droits réservés.',
+                      '© 2026 SIX. Tous droits réservés.',
                       style: TextStyle(fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
